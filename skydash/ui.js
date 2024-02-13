@@ -77,7 +77,7 @@ function editContent(element, index, skyKey) {
 // HTML TEMPLATES
 function collectionsDialogInnerHTML(collections) {
 	return `
-		<button data-dialog-close>Close</button>
+		<button data-dialog-close="collections">Close</button>
 		<button onclick="document.querySelector('#form-container').style.display = 'block';">Create Collection</button>
 		<div id="form-container" style="display:none;">
 			<form
@@ -165,8 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			collectionsDialog.innerHTML = body;
 		}
 
-		if (event.target.matches('[data-dialog-close]')) {
-			console.log('closed')
+		if (event.target.matches('[data-dialog-close="collections"]')) {
 			collectionsDialog.close();
 		}
 
@@ -182,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		if (event.target.matches('[data-dialog-close="media"]')) {
-			console.log('closed')
 			mediaDialog.close();
 		}
 	});
