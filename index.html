@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TEST WEBSITE</title>
+	<script src="skydash/ui.js" type="module"></script>
+
+	<!-- General -->
+	<style>
+	  body {
+	    font-family: Arial, sans-serif;
+	    margin: 0;
+	    padding: 0;
+	  }
+	  .header {
+	    display: flex;
+	    justify-content: space-between;
+	    align-items: center;
+	    padding: 20px;
+	    background-color: #f3f3f3;
+	  }
+	  .logo {
+	    width: 100px; /* Adjust based on your logo's size */
+	  }
+	  .nav-form {
+	    display: flex;
+	    align-items: center;
+	  }
+	  .nav-form input[type="email"] {
+	    padding: 10px;
+	    margin-right: 10px;
+	    border: 1px solid #ccc;
+	    border-radius: 5px;
+	  }
+	  .nav-form button {
+	    padding: 10px 20px;
+	    border: none;
+	    border-radius: 5px;
+	    background-color: blue;
+	    color: white;
+	    cursor: pointer;
+	  }
+	  .main-content {
+	    padding: 20px;
+	    text-align: center;
+	  }
+	  .footer {
+	    padding: 20px;
+	    background-color: #f3f3f3;
+	    text-align: center;
+	  }
+	  /* Responsive styling */
+	  @media (max-width: 600px) {
+	    .header {
+	      flex-direction: column;
+	    }
+	    .nav-form {
+	      margin-top: 20px;
+	    }
+	  }
+	</style>
+</head>
+<body data-sky-key="home">
+	<div class="header">
+		<img src="logo-placeholder.png" alt="Logo" class="logo">
+		<form class="nav-form">
+			<input type="email" placeholder="Enter your email">
+			<button type="submit">Subscribe</button>
+		</form>
+	</div>
+
+	<div class="main-content" style="height: 100dvh">
+		<p data-sky-editable>This is a simple paragraph to explain what is to come. Stay tuned for updates!</p>
+	</div>
+
+	<div class="footer">
+		<p data-sky-editable>&copy; 2024 Your Company Name. All rights reserved.</p>
+	</div>
+</body>
+</html>

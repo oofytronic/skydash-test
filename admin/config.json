@@ -1,0 +1,127 @@
+{
+	"collections": [
+		{
+			"label": "Content",
+			"name": "content",
+			"folder": "content",
+			"format": "frontmatter",
+			"fields": [
+				{
+					"label": "Meta",
+					"name": "meta",
+					"widget": "object",
+					"fields": [
+						{
+							"label": "Meta Title",
+							"name": "title",
+							"widget": "string",
+							"default": "Title | The Adapting Leader"
+						},
+						{
+							"label": "Meta Description",
+							"name": "description",
+							"widget": "string"
+						},
+						{
+							"label": "Meta Image",
+							"name": "image",
+							"widget": "image"
+						},
+						{
+							"label": "Keywords",
+							"name": "keywords",
+							"widget": "string"
+						}
+					]
+				},
+				{
+					"label": "State",
+					"name": "state",
+					"widget": "hidden",
+					"default": "publish"
+				},
+				{
+					"label": "Collections",
+					"name": "collections",
+					"widget": "hidden",
+					"default": "articles"
+				},
+				{
+					"label": "Layout",
+					"name": "layout",
+					"widget": "hidden",
+					"default": "_includes/layout-post.js"
+				},
+				{
+					"label": "Title",
+					"name": "title",
+					"widget": "string"
+				},
+				{
+					"label": "Date",
+					"name": "date",
+					"widget": "datetime",
+					"format": "MM-DD-YYYY",
+					"date_format": "MM-DD-YYYY",
+					"time_format": false
+				},
+				{
+					"label": "Formatted Date",
+					"name": "formatted_date",
+					"widget": "string",
+					"default": "Month, Year"
+				},
+				{
+					"label": "Body",
+					"name": "body",
+					"widget": "markdown"
+				}
+			]
+		},
+		{
+			"label": "Pages",
+			"name": "pages",
+			"files": [
+				{
+					"label": "Home",
+					"name": "home",
+					"file": "_data/home.json",
+					"fields": [
+						{
+							"label": "Hero Title",
+							"name": "hero_title",
+							"widget": "string"
+						},
+						{
+							"label": "Hero Subtitle",
+							"name": "hero_subtitle",
+							"widget": "string"
+						},
+						{
+							"label": "Hero Image",
+							"name": "hero_image",
+							"widget": "image"
+						}
+					]
+				},
+				{
+					"label": "About",
+					"name": "about",
+					"file": "_data/about.json",
+					"fields": [
+						{
+							"label": "Header",
+							"name": "about_header",
+							"widget": "string"
+						},
+						{
+							"label": "Headshot",
+							"name": "about_headshot",
+							"widget": "image"
+						}
+					]
+				}
+			]
+		}
+	]
+}
