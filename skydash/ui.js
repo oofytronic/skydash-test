@@ -1,18 +1,4 @@
-// EXAMPLE DATA
-const exampleData = {
-  "articles": [
-    {
-      "title": "Article 1",
-      "summary": "A brief summary of Article 1",
-      "actions": {
-        "view": "/viewArticle1",
-        "edit": "/editArticle1",
-        "delete": "/deleteArticle1"
-      }
-    }
-  ]
-}
-
+// SKYDASH UI
 function createSkyDashUI() {
 	const uiHTML = `
 	<div class="skydash-menu">
@@ -66,6 +52,7 @@ function injectSkyDashStyles() {
     document.head.appendChild(styleSheet);
 }
 
+//EDITABLE CONTENT
 function applyEditableContent(editableContent) {
     const editableElements = document.querySelectorAll('[data-sky-editable]');
     editableElements.forEach((element, index) => {
@@ -87,6 +74,7 @@ function editContent(element, index, skyKey) {
     }
 }
 
+// HTML TEMPLATES
 function collectionsDialogInnerHTML(collections) {
 	return `
 		<button data-dialog-close>Close</button>
@@ -122,6 +110,7 @@ function collectionsDialogInnerHTML(collections) {
 	`;
 }
 
+//DATABASE FUNCTIONS
 function readCollections() {
     // Attempt to retrieve the collections object from localStorage
     const collectionsJSON = localStorage.getItem('collections');
@@ -154,7 +143,6 @@ function saveCollection(newCollection) {
 
 	// Optionally, refresh the collections display or close the dialog
 }
-
 
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
@@ -233,20 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let editableContent = {};
 
-    // Check if there's already saved data for this key, if so, load it
     if (localStorage.getItem(skyKey)) {
         editableContent = JSON.parse(localStorage.getItem(skyKey));
         applyEditableContent(editableContent);
     }
 
     editableElements.forEach((element, index) => {
-        // Save initial content in localStorage if not already present
         if (!(index in editableContent)) {
             editableContent[index] = element.innerHTML;
             localStorage.setItem(skyKey, JSON.stringify(editableContent));
         }
 
-        // Append an edit button to each editable element
         const editButton = document.createElement('button');
         editButton.textContent = 'Edit';
         editButton.addEventListener('click', () => editContent(element, index, skyKey));
