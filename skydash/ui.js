@@ -130,6 +130,7 @@ function collectionsDialogInnerHTML(collections) {
 			<div>
 				<h2>${collection.displayName}</h2>
 				<button class="instance-view-button" data-collection-id="${collection.id}">View</button>
+				<button data-collection-id="${collection.id}" class="delete-collection-button">Delete</button>
 			</div>
 		`;
 		}).join('') : '<p>No Collections</p>'}
@@ -137,6 +138,7 @@ function collectionsDialogInnerHTML(collections) {
 }
 
 function instancesDialogInnerHTML(collectionData, instances) {
+	console.log(collectionData)
 	return `
 		<h1>${collectionData.displayName}</h1>
 		<button
@@ -159,6 +161,7 @@ function instancesDialogInnerHTML(collectionData, instances) {
 				<h2>${instance.title}</h2>
 				<p>${instance.content}</p>
 				<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="edit-instance-button">Edit</button>
+				<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="delete-instance-button">Delete</button>
 			</div>
 		`;
 		}).join('') : `<p>Add ${capitalize(collectionData.singularId)}</p>`}
@@ -175,8 +178,7 @@ function instanceEditDialogInnerHTML(collectionId, instance) {
 			>
 			<input type="text" name="title" value="${instance.title}" required>
 			<textarea name="content" required>${instance.content}</textarea>
-			<button type="submit">Update Post</button>
-			<button>Delete Post</button>
+			<button type="submit">Update</button>
 		</form>
 	`;
 }
@@ -277,8 +279,10 @@ function updateCollection() {
 	// Update Fields (*optional* fields only)
 }
 
-function deleteCollection() {
-	// Will Delete Instances
+function deleteCollection(collectionId) {
+	const collections = readCollections();
+    const newCollections = collections.filter(c => c.id !== collectionId);
+    localStorage.setItem('collections', JSON.stringify(newCollections));
 }
 
 function readInstances(collectionId) {
@@ -297,7 +301,7 @@ function readInstance(collectionId, instanceId) {
 
 function createInstance(collectionId, newInstance) {
     // Retrieve existing collections from localStorage
-    const collections = JSON.parse(localStorage.getItem('collections')) || [];
+    const collections = readCollections();
     
     // Find the collection by ID
     const collectionIndex = collections.findIndex(c => c.id === collectionId);
@@ -306,10 +310,6 @@ function createInstance(collectionId, newInstance) {
         return;
     }
 
-    // Add the new instance to the collection's instances array
-    if (!collections[collectionIndex].instances) {
-        collections[collectionIndex].instances = []; // Ensure the instances array exists
-    }
     collections[collectionIndex].instances.push(newInstance);
 
     // Save the updated collections array back to localStorage
@@ -339,7 +339,21 @@ function updateInstance(newInstance, currentInstance, collectionId) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
-function deleteInstance() {}
+function deleteInstance(collectionId, instanceId) {
+	const collections = readCollections();
+    
+    // Find the collection by ID
+    const collectionIndex = collections.findIndex(c => c.id === collectionId);
+    if (collectionIndex === -1) {
+        console.error('Collection not found');
+        return;
+    }
+
+    const instanceIndex = collections[collectionIndex].instances.findIndex(instance => instance.id === instanceId);
+    collections[collectionIndex].instances.splice(instanceIndex);
+
+    localStorage.setItem('collections', JSON.stringify(collections));
+}
 
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
@@ -400,6 +414,18 @@ document.addEventListener('DOMContentLoaded', () => {
 			mediaDialog.close();
 		}
 
+		// COLLECTIONS
+		if (event.target.matches('.delete-collection-button')) {
+			// DATA
+			const collectionId = event.target.getAttribute('data-collection-id');
+			deleteCollection(collectionId);
+			const collections = readCollections();
+
+			// VIEW
+			const body = collectionsDialogInnerHTML(collections);
+			collectionsDialog.innerHTML = body;
+		}
+
 		// INSTANCES
 		if (event.target.matches('.instance-view-button')) {
 			// DATA
@@ -420,6 +446,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// VIEW
 			const body = instanceEditDialogInnerHTML(collectionId, instance);
+			collectionsDialog.innerHTML = body;
+		}
+
+		if (event.target.matches('.delete-instance-button')) {
+			// DATA
+			const collectionId = event.target.getAttribute('data-collection-id');
+			const instanceId = event.target.getAttribute('data-instance-id');
+			deleteInstance(collectionId, instanceId);
+			const collection = readCollection(collectionId);
+			const instances = readInstances(collectionId);
+
+			// VIEW
+			const body = instancesDialogInnerHTML(collection, instances);
 			collectionsDialog.innerHTML = body;
 		}
 	});
