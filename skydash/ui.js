@@ -121,6 +121,10 @@ function collectionsDialogInnerHTML(collections) {
 					Display Name
 					<input type="text" name="collectionDisplay" placeholder="Display Name" required>
 				</label>
+				<div>
+					<p>Collection Template</p>
+					<button id="addFieldButton">+ Field</button>
+				</div>
 				<button type="submit">Create Collection</button>
 			</form>
 		</div>
@@ -349,9 +353,7 @@ function deleteInstance(collectionId, instanceId) {
         return;
     }
 
-    const instanceIndex = collections[collectionIndex].instances.findIndex(instance => instance.id === instanceId);
-    collections[collectionIndex].instances.splice(instanceIndex);
-
+    collections[collectionIndex].instances.filter(instance => instance.id !== instanceId);
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
@@ -426,6 +428,25 @@ document.addEventListener('DOMContentLoaded', () => {
 			collectionsDialog.innerHTML = body;
 		}
 
+		if (event.target.matches('#addFieldButton')) {
+			event.preventDefault();
+			const newId = Date.now().toString();
+			const field = `
+			<div>
+			<label for="name-${newId}">
+				<input type="text" name="name-${newId}" id="name-${newId}">
+			</label>
+			<label for="type-${newId}">
+				<select name="type-${newId}" id="type-${newId}">
+					<option value="text">Text</option>
+					<option value="textarea">Large Text</option>
+				</select>
+			</label>
+			</div>
+			`
+			event.target.insertAdjacentHTML('beforebegin', field)
+		}
+
 		// INSTANCES
 		if (event.target.matches('.instance-view-button')) {
 			// DATA
@@ -468,9 +489,51 @@ document.addEventListener('DOMContentLoaded', () => {
 		// CREATE COLLECTION
 		if (event.target.matches('#new-collection-form')) {
 			event.preventDefault();
-			const tempData = genNewTempFormData(event);
+			//const tempData = genNewTempFormData(event);
+
+			function getGroupsFromFormData(formData) {
+			    const groupedArray = [];
+
+			    // Use a Set to keep track of processed IDs to avoid duplication
+			    const processedIds = new Set();
+
+			    for (let [key, value] of formData.entries()) {
+			        const idMatch = key.match(/-(\d+)$/); // Match the numeric ID at the end of the key
+
+			        if (idMatch) {
+			            const id = idMatch[1];
+
+			            // Skip if this ID has already been processed
+			            if (processedIds.has(id)) continue;
+
+			            // Mark this ID as processed
+			            processedIds.add(id);
+
+			            // Attempt to find the matching name and type for this ID
+			            const name = formData.get(`name-${id}`);
+			            const type = formData.get(`type-${id}`);
+
+			            // If both name and type are found, add them as an object to the array
+			            if (name && type) {
+			                groupedArray.push({ name, type });
+			            }
+			        }
+			    }
+
+			    return groupedArray;
+			}
+
+			const formData = new FormData(event.target);
+			const tempData = {};
+			tempData.newId = Date.now().toString();
+
+			for (let [key, value] of formData.entries()) {
+				tempData[key] = value;
+			}
 
 			const collection = genNewCollectionObject(tempData);
+			collection.schema = getGroupsFromFormData(formData);
+			console.log(collection)
 			createCollection(collection);
 			const collections = readCollections();
 
