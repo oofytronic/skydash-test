@@ -150,7 +150,6 @@ function renderCollectionsDialog(collections) {
 }
 
 function renderInstances(collectionData, instances) {
-	console.log('GOT HERE')
 	const schema = collectionData.schema;
 	const display = instances.map(instance => {
 		const fields = schema.map(field => {
