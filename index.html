@@ -18,7 +18,7 @@
 	    justify-content: space-between;
 	    align-items: center;
 	    padding: 20px;
-	    background-color: #f3f3f3;
+	    background-color: #F6F6F6;;
 	  }
 	  .logo {
 	    width: 100px; /* Adjust based on your logo's size */
@@ -37,17 +37,23 @@
 	    padding: 10px 20px;
 	    border: none;
 	    border-radius: 5px;
-	    background-color: blue;
+	    background-color: #4F6A91;
 	    color: white;
 	    cursor: pointer;
 	  }
+
+	  section {
+			background: #191b1c;
+			color: #F6F6F6;
+		}
+
 	  .main-content {
 	    padding: 20px;
-	    text-align: center;
 	  }
 	  .footer {
 	    padding: 20px;
-	    background-color: #f3f3f3;
+	    background-color: #191b1c;
+	    color: #F6F6F6;
 	    text-align: center;
 	  }
 	  /* Responsive styling */
@@ -62,20 +68,36 @@
 	</style>
 </head>
 <body data-sky-key="home">
-	<div class="header">
+	<nav class="header">
 		<img src="logo-placeholder.png" alt="Logo" class="logo">
 		<form class="nav-form">
 			<input type="email" placeholder="Enter your email">
 			<button type="submit">Subscribe</button>
 		</form>
-	</div>
+	</nav>
 
-	<div class="main-content" style="height: 100dvh">
-		<p data-sky-editable>This is a simple paragraph to explain what is to come. Stay tuned for updates!</p>
-	</div>
+	<section class="main-content" style="height: 100dvh; display: flex; flex-direction: column; gap: 2rem;">
+		<p data-sky-editable>Something WWWinged this Way Comes...</p>
+
+		<div style="display: flex; flex-direction: column; gap: 1rem; ">
+			<p>The World Wide Web deserves a comeback.</p>
+
+			<p>It has been reduced to the utilization of a handful of platforms, a majority of them using a device-native app as their primary medium of interaction. While these platforms have spurred on content discovery and made information more accessible, they have done so while stifling the essence of the web: an ever-expanding network of linked documents.</p>
+
+			<p>In the context of content creation and content discovery, websites today are predominantly seen as archival structures, where content creators and businesses store their content and information once they have made it available elsewhere first. Don't get me wrong, today's content platforms are marvels of technology. They have spurred on the exchanging of information and have made content creation and consumption easy and seamless. So, what's next?</p>
+
+			<p>This isn't the end. Humanity continues to grow and adapt. And, the new foundation of the web is already being created and implemented. It is a foundation that puts the user and content creator back in control. It is a foundation where those humble, linked documents have superpowers. I'm building on that foundation and I'm so excited to share the technologies I'm building with others who share the vision of a self-soverign, lightweight, fun and free web.</p>
+
+			<p>Let's open the web back up once again.</p>
+
+			<p>OOF | Owner and CEO | feathermode</p>
+
+			<p>If you'd like to be notified when I release the first of a suite of technologies, you can signup below.</p>
+		</div>
+	</section>
 
 	<div class="footer">
-		<p data-sky-editable>&copy; 2024 Your Company Name. All rights reserved.</p>
+		<p data-sky-editable>&copy; 2024 feathermode. All rights reserved.</p>
 	</div>
 </body>
 </html>

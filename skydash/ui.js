@@ -66,7 +66,35 @@ function injectSkyDashStyles() {
             right: 1rem;
             border: 1px black solid;
             padding: 1rem;
+            background-color: #F6F6F6;
         }
+
+        /* Editables */
+        .editable-wrapper {
+		    position: relative;
+		    display: block;
+		     border: 1px solid transparent;
+		}
+
+		.editable-wrapper:hover {
+			border: #7F557B 1px solid;
+		}
+
+		.sky-edit-button {
+			display: none;
+		    position: absolute;
+		    top: 0;
+		    left: 50%;
+		}
+
+		.editable-wrapper:hover .sky-edit-button {
+			display: block;
+		}
+
+		#editForm {
+			display: flex;
+			flex-direction: column;
+		}
     `;
 
     const styleSheet = document.createElement('style');
@@ -99,6 +127,16 @@ function editContent(element, index, skyKey) {
 
     // Save skyKey in the form for access during submission
     editDialog.setAttribute('data-sky-key', skyKey);
+}
+
+function editContentHandler(event, skyKey) {
+    const index = event.target.getAttribute('data-edit-index');
+    // Retrieve the actual element to edit using the index
+    const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
+
+    if(elementToEdit) {
+        editContent(elementToEdit, index, skyKey);
+    }
 }
 
 // TEMPLATES (HTML)
@@ -413,19 +451,34 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editables = getEditables(skyKey);
 
     editableElements.forEach((element, index) => {
-        if (!(index in editables)) {
-            editables[index] = element.innerHTML;
-            localStorage.setItem(skyKey, JSON.stringify(editables));
-        }
+	    if (!(index in editables)) {
+	        editables[index] = element.innerHTML;
+	        localStorage.setItem(skyKey, JSON.stringify(editables));
+	    }
 
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Edit';
-        editButton.addEventListener('click', () => editContent(element, index, skyKey));
-        element.parentNode.insertBefore(editButton, element.nextSibling);
-    });
+	    // Wrap the element and button in a new div with relative positioning
+	    const wrapper = document.createElement('div');
+	    wrapper.classList.add('editable-wrapper');
+
+	    // Move the editable element into the wrapper
+	    element.parentNode.insertBefore(wrapper, element);
+	    wrapper.appendChild(element);
+
+	    // Create and insert the button as a sibling to the element, but inside the wrapper
+	    const buttonHTML = `
+	        <button class="sky-edit-button" data-edit-index="${index}">Edit</button>
+	    `;
+	    element.insertAdjacentHTML('afterend', buttonHTML);
+	});
+
+
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
+		if (event.target.matches('.sky-edit-button')) {
+			editContentHandler(event, skyKey);
+		}
+
 		// DIALOGS (OPEN)
 		if (event.target.matches('#collectionsButton')) {
 			// DATA
