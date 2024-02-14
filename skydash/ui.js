@@ -5,6 +5,14 @@ function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+function truncateString(str, maxLength = 60) {
+    if (str.length > maxLength) {
+        return str.substring(0, maxLength - 3) + '...';
+    } else {
+        return str;
+    }
+}
+
 // SKYDASH UI | *GOOD FOR NOW*
 function createSkyDashUI() {
 	const uiHTML = `
@@ -142,31 +150,39 @@ function renderCollectionsDialog(collections) {
 }
 
 function renderInstances(collectionData, instances) {
+	console.log('GOT HERE')
 	const schema = collectionData.schema;
-	const display = schema.map(obj => {
-		const instances = collectionData.instances;
-		instances.map(instance => {
-			for (const [key, value] of Object.entries(instances)) {
-				if (key === obj.name) {
-					
+	const display = instances.map(instance => {
+		const fields = schema.map(field => {
+			if (instance.hasOwnProperty(field.name)) {
+				if (field.type === 'text') {
+					return `<div class="${field.type}">
+		                        <label><strong>${field.name}:</strong></label>
+		                        <span>${instance[field.name]}</span>
+		                    </div>`;
+				}
+
+				if (field.type === 'textarea') {
+					return `<div class="${field.type}">
+		                        <label><strong>${field.name}:</strong></label>
+		                        <span>${truncateString(instance[field.name])}</span>
+		                    </div>`;
 				}
 			}
-		})
-		
-	})
+		}).join('');
+
+		return `<div>
+					${fields}
+					<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="edit-instance-button">Edit</button>
+					<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="delete-instance-button">Delete</button>
+				</div>`;	
+	}).join('');
+
+
 	return `
 		<h1>${collectionData.displayName}</h1>
 		<button class="create-instance-button" data-collection-id="${collectionData.id}">+ New ${capitalize(collectionData.singularId)}</button>
-		${instances.length > 0 ? instances.map(instance => {
-			return `
-			<div>
-				<h2>${instance.title}</h2>
-				<p>${instance.content}</p>
-				<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="edit-instance-button">Edit</button>
-				<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="delete-instance-button">Delete</button>
-			</div>
-		`;
-		}).join('') : `<p>Add ${capitalize(collectionData.singularId)}</p>`}
+		${instances.length > 0 ? display : `<p>Add ${capitalize(collectionData.singularId)}</p>`}
 	`;
 }
 
@@ -579,9 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		// CREATE INSTANCE
 		if (event.target.matches('#new-instance-form')) {
 			event.preventDefault();
-			const collections = readCollections();
 			const collectionId = event.target.getAttribute('data-collection-id');
-			const collection = readCollection(collectionId);
 			
 			const formData = new FormData(event.target);
 			const tempData = {};
@@ -595,6 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const instance = {...newInstanceObj, ...tempData}
 
 			createInstance(collectionId, instance);
+			const collection = readCollection(collectionId);
 			const instances = readInstances(collectionId);
 
 			// VIEW
