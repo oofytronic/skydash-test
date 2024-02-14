@@ -94,14 +94,14 @@ function editContent(element, index, skyKey) {
 }
 
 // TEMPLATES (HTML)
-function mediaDialogInnerHTML(media) {
+function renderMediaDialog(media) {
 	return `
 		<button data-sky-dialog-close="media">Close</button>
 		<button>Add Media</button>
 	`;
 }
 
-function collectionsDialogInnerHTML(collections) {
+function renderCollectionsDialog(collections) {
 	return `
 		<button data-sky-dialog-close="collections">Close</button>
 		<button onclick="document.querySelector('#form-container').style.display = 'block';">Create Collection</button>
@@ -141,24 +141,22 @@ function collectionsDialogInnerHTML(collections) {
 	`;
 }
 
-function instancesDialogInnerHTML(collectionData, instances) {
-	console.log(collectionData)
+function renderInstances(collectionData, instances) {
+	const schema = collectionData.schema;
+	const display = schema.map(obj => {
+		const instances = collectionData.instances;
+		instances.map(instance => {
+			for (const [key, value] of Object.entries(instances)) {
+				if (key === obj.name) {
+					
+				}
+			}
+		})
+		
+	})
 	return `
 		<h1>${collectionData.displayName}</h1>
-		<button
-			onclick="document.querySelector('#form-container').style.display = 'block';"
-		>+ New ${capitalize(collectionData.singularId)}</button>
-		<div id="form-container" style="display:none;">
-			<form
-				id="new-instance-form"
-				style="display: flex; flex-direction: column; gap: 1rem;"
-				data-collection-id="${collectionData.id}">
-				<input type="text" name="title" placeholder="Title" required>
-				<input type="text" name="author" placeholder="Author" required>
-				<textarea name="content" placeholder="Content" required></textarea>
-				<button type="submit">Create ${capitalize(collectionData.singularId)}</button>
-			</form>
-		</div>
+		<button class="create-instance-button" data-collection-id="${collectionData.id}">+ New ${capitalize(collectionData.singularId)}</button>
 		${instances.length > 0 ? instances.map(instance => {
 			return `
 			<div>
@@ -172,7 +170,37 @@ function instancesDialogInnerHTML(collectionData, instances) {
 	`;
 }
 
-function instanceEditDialogInnerHTML(collectionId, instance) {
+function renderNewInstanceForm(collectionData) {
+	const schema = collectionData.schema;
+
+	const fields = schema.map(obj => {
+		if (obj.type === 'text') {
+			return `
+			<label for="${obj.name}">
+				${obj.name}
+				<input type="text" id="${obj.name}" name="${obj.name}" placeholder="${obj.name}" required>
+			</label>`;
+		} else if (obj.type === 'textarea') {
+			return `
+			<label for="${obj.name}">
+				${obj.name}
+				<textarea id="${obj.name}" name="${obj.name}" placeholder="${obj.name}" required></textarea>
+			</label>`;
+		}
+	}).join('');
+
+	return `
+	<form
+		id="new-instance-form"
+		style="display: flex; flex-direction: column; gap: 1rem;"
+		data-collection-id="${collectionData.id}">
+		${fields}
+		<button type="submit">Create ${capitalize(collectionData.singularId)}</button>
+	</form>
+	`;
+}
+
+function renderInstanceEditForm(collectionId, instance) {
 	return `
 		<form
 			id="edit-instance-form"
@@ -204,9 +232,6 @@ function genNewCollectionObject(data) {
 function genNewInstanceObject(data) {
 	return {
 		id: data.newId,
-		title: data.title,
-		content: data.content,
-		author: data.author || 'Anonymous',
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString()
 	}
@@ -393,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// VIEW
 			collectionsDialog.show();
-			const body = collectionsDialogInnerHTML(collections);
+			const body = renderCollectionsDialog(collections);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -403,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// VIEW
 			mediaDialog.show();
-			const body = mediaDialogInnerHTML(media);
+			const body = renderMediaDialog(media);
 			mediaDialog.innerHTML = body;
 		}
 
@@ -424,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const collections = readCollections();
 
 			// VIEW
-			const body = collectionsDialogInnerHTML(collections);
+			const body = renderCollectionsDialog(collections);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -448,6 +473,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		// INSTANCES
+		if (event.target.matches('.create-instance-button')) {
+			// DATA
+			const collectionId = event.target.getAttribute('data-collection-id');
+			const collection = readCollection(collectionId);
+
+			// VIEW
+			const body = renderNewInstanceForm(collection);
+			collectionsDialog.innerHTML = body;
+		}
+
 		if (event.target.matches('.instance-view-button')) {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
@@ -455,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const instances = readInstances(collectionId);
 
 			// VIEW
-			const body = instancesDialogInnerHTML(collection, instances);
+			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -466,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const instance = readInstance(collectionId, instanceId);
 
 			// VIEW
-			const body = instanceEditDialogInnerHTML(collectionId, instance);
+			const body = renderInstanceEditForm(collectionId, instance);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -479,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			const instances = readInstances(collectionId);
 
 			// VIEW
-			const body = instancesDialogInnerHTML(collection, instances);
+			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
 		}
 	});
@@ -533,12 +568,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			const collection = genNewCollectionObject(tempData);
 			collection.schema = getGroupsFromFormData(formData);
-			console.log(collection)
 			createCollection(collection);
 			const collections = readCollections();
 
 			// VIEW
-			const body = collectionsDialogInnerHTML(collections);
+			const body = renderCollectionsDialog(collections);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -549,15 +583,22 @@ document.addEventListener('DOMContentLoaded', () => {
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const collection = readCollection(collectionId);
 			
-			const tempData = genNewTempFormData(event);
+			const formData = new FormData(event.target);
+			const tempData = {};
+			tempData.newId = Date.now().toString();
 
-			const instance = genNewInstanceObject(tempData);
+			for (let [key, value] of formData.entries()) {
+				tempData[key] = value;
+			}
+
+			const newInstanceObj = genNewInstanceObject(tempData);
+			const instance = {...newInstanceObj, ...tempData}
 
 			createInstance(collectionId, instance);
 			const instances = readInstances(collectionId);
 
 			// VIEW
-			const body = instancesDialogInnerHTML(collection, instances);
+			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -573,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			updateInstance(tempData, instance, collectionId);
 
-			const body = instancesDialogInnerHTML(collection, instances);
+			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
 		}
 
