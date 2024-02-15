@@ -141,10 +141,12 @@ function editContentHandler(event, skyKey) {
 
 // TEMPLATES (HTML)
 function renderMediaDialog(media) {
-	return `
-		<button data-sky-dialog-close="media">Close</button>
-		<button>Add Media</button>
-	`;
+    return `
+        <button data-sky-dialog-close="media">Close</button>
+	    <input type="file" id="media-upload-input" accept="image/*" style="display:none;">
+	    <button id="openFileUpload">Upload Image</button>
+	    <div id="mediaGallery"></div>
+    `;
 }
 
 function renderCollectionsDialog(collections) {
@@ -189,31 +191,52 @@ function renderCollectionsDialog(collections) {
 
 function renderInstances(collectionData, instances) {
 	const schema = collectionData.schema;
-	const display = instances.map(instance => {
-		const fields = schema.map(field => {
-			if (instance.hasOwnProperty(field.name)) {
-				if (field.type === 'text') {
-					return `<div class="${field.type}">
-		                        <label><strong>${field.name}:</strong></label>
-		                        <span>${instance[field.name]}</span>
-		                    </div>`;
-				}
+    const display = instances.map(instance => {
+        const fields = schema.map(field => {
+            let fieldValue = instance[field.name] || '';
+            // Default display if field type is not handled explicitly
+            let fieldDisplay = `<div class="${field.type}"><label>${field.name}:</label> <span>${fieldValue}</span></div>`;
 
-				if (field.type === 'textarea') {
-					return `<div class="${field.type}">
-		                        <label><strong>${field.name}:</strong></label>
-		                        <span>${truncateString(instance[field.name])}</span>
-		                    </div>`;
-				}
-			}
-		}).join('');
+            switch (field.type) {
+                case 'textarea':
+                    fieldDisplay = `<div class="${field.type}"><label>${field.name}:</label> <span>${truncateString(fieldValue, 60)}</span></div>`;
+                    break;
+                case 'checkbox':
+                    // Assuming boolean representation for checkbox
+                    fieldValue = fieldValue ? 'Yes' : 'No';
+                    break;
+                case 'select':
+                case 'radio':
+                    // Assumed handled similarly to text fields, potentially with additional logic to match display value to option text
+                    break;
+                case 'color':
+                    // Displaying the color with a visual representation
+                    fieldDisplay = `<div class="${field.type}"><label>${field.name}:</label> <span style="background-color: ${fieldValue}; width: 20px; height: 20px; border: 1px solid #000; display: inline-block;"></span> ${fieldValue}</div>`;
+                    break;
+                case 'file':
+                    // Simplified display, consider implementing a more complex handler for actual file objects
+                    fieldDisplay = `<div class="${field.type}"><label>${field.name}:</label> <span>File uploaded</span></div>`;
+                    break;
+                case 'date':
+                case 'datetime-local':
+                case 'email':
+                case 'number':
+                case 'text':
+                case 'time':
+                case 'url':
+                    // These all render similarly to the default with plain text representation
+                    break;
+                // Implement additional specific cases as needed
+            }
 
-		return `<div>
-					${fields}
-					<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="edit-instance-button">Edit</button>
-					<button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="delete-instance-button">Delete</button>
-				</div>`;	
-	}).join('');
+            return fieldDisplay;
+        }).join('');
+
+        return `<div class="instance">${fields}
+                    <button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="edit-instance-button">Edit</button>
+                    <button data-collection-id="${collectionData.id}" data-instance-id="${instance.id}" class="delete-instance-button">Delete</button>
+                </div>`;
+    }).join('');
 
 
 	return `
@@ -224,45 +247,89 @@ function renderInstances(collectionData, instances) {
 }
 
 function renderNewInstanceForm(collectionData) {
-	const schema = collectionData.schema;
+    const schema = collectionData.schema;
 
-	const fields = schema.map(obj => {
-		if (obj.type === 'text') {
-			return `
-			<label for="${obj.name}">
-				${obj.name}
-				<input type="text" id="${obj.name}" name="${obj.name}" placeholder="${obj.name}" required>
-			</label>`;
-		} else if (obj.type === 'textarea') {
-			return `
-			<label for="${obj.name}">
-				${obj.name}
-				<textarea id="${obj.name}" name="${obj.name}" placeholder="${obj.name}" required></textarea>
-			</label>`;
+    const fields = schema.map(field => {
+        switch (field.type) {
+            case 'text':
+                return `<label>${field.name}<input type="text" name="${field.name}" placeholder="${field.name}" required></label>`;
+            case 'textarea':
+                return `<label>${field.name}<textarea name="${field.name}" placeholder="${field.name}" required></textarea></label>`;
+            case 'number':
+                return `<label>${field.name}<input type="number" name="${field.name}" placeholder="Enter a number" required></label>`;
+            case 'email':
+                return `<label>${field.name}<input type="email" name="${field.name}" placeholder="Enter an email" required></label>`;
+            case 'date':
+                return `<label>${field.name}<input type="date" name="${field.name}" required></label>`;
+            case 'time':
+                return `<label>${field.name}<input type="time" name="${field.name}" required></label>`;
+            case 'datetime-local':
+                return `<label>${field.name}<input type="datetime-local" name="${field.name}" required></label>`;
+            case 'select':
+                // Placeholder for select; actual options should come from the schema or related configuration
+                return `<label>${field.name}<select name="${field.name}"><option value="option1">Option 1</option></select></label>`;
+            case 'checkbox':
+                return `<label><input type="checkbox" name="${field.name}" value="true"> ${field.name}</label>`;
+            case 'radio':
+                // Placeholder for radio buttons; actual options should be dynamically generated
+                return `<fieldset>
+                            <legend>${field.name}</legend>
+                            <label><input type="radio" name="${field.name}" value="option1"> Option 1</label>
+                            <label><input type="radio" name="${field.name}" value="option2"> Option 2</label>
+                        </fieldset>`;
+            case 'url':
+                return `<label>${field.name}<input type="url" name="${field.name}" placeholder="https://example.com" required></label>`;
+            case 'color':
+                return `<label>${field.name}<input type="color" name="${field.name}" required></label>`;
+            case 'file':
+                return `<label>${field.name}<input type="file" name="${field.name}" required></label>`;
+            // Implement WYSIWYG/Rich Text editor initialization in a separate step, as it requires JavaScript
+            default:
+                return `<p>Unsupported field type: ${field.type}</p>`;
+        }
+    }).join('');
+
+    return `
+    <form
+        id="new-instance-form"
+        style="display: flex; flex-direction: column; gap: 1rem;"
+        data-collection-id="${collectionData.id}">
+        ${fields}
+        <button type="submit">Create ${capitalize(collectionData.singularId)}</button>
+    </form>
+    `;
+}
+
+function renderInstanceEditForm(collectionData, instance) {
+	const schema = collectionData.schema;
+	const fields = schema.map(field => {
+		if (instance.hasOwnProperty(field.name)) {
+			if (field.type === 'text') {
+				return `
+				<label for="${field.name}">
+					${field.name}
+					<input type="text" id="${field.name}" name="${field.name}" placeholder="${field.name}" value="${instance[field.name]}" required>
+				</label>`;
+			}
+
+			if (field.type === 'textarea') {
+				return `
+				<label for="${field.name}">
+					${field.name}
+					<textarea id="${field.name}" name="${field.name}" placeholder="${field.name}" required>${instance[field.name]}</textarea>
+				</label>`;
+			}
 		}
 	}).join('');
 
 	return `
-	<form
-		id="new-instance-form"
-		style="display: flex; flex-direction: column; gap: 1rem;"
-		data-collection-id="${collectionData.id}">
-		${fields}
-		<button type="submit">Create ${capitalize(collectionData.singularId)}</button>
-	</form>
-	`;
-}
-
-function renderInstanceEditForm(collectionId, instance) {
-	return `
 		<form
 			id="edit-instance-form"
 			style="display: flex; flex-direction: column; gap: 1rem;"
-			data-collection-id="${collectionId}"
+			data-collection-id="${collectionData.id}"
 			data-instance-id="${instance.id}"
 			>
-			<input type="text" name="title" value="${instance.title}" required>
-			<textarea name="content" required>${instance.content}</textarea>
+			${fields}
 			<button type="submit">Update</button>
 		</form>
 	`;
@@ -422,7 +489,7 @@ function updateInstance(newInstance, currentInstance, collectionId) {
 }
 
 function deleteInstance(collectionId, instanceId) {
-	const collections = readCollections();
+    const collections = readCollections();
     
     // Find the collection by ID
     const collectionIndex = collections.findIndex(c => c.id === collectionId);
@@ -431,9 +498,43 @@ function deleteInstance(collectionId, instanceId) {
         return;
     }
 
-    collections[collectionIndex].instances.filter(instance => instance.id !== instanceId);
+    // Filter out the instance to delete
+    const filteredInstances = collections[collectionIndex].instances.filter(instance => instance.id !== instanceId);
+
+    // Reassign the filtered instances back to the collection
+    collections[collectionIndex].instances = filteredInstances;
+
+    // Save the updated collections back to localStorage
     localStorage.setItem('collections', JSON.stringify(collections));
 }
+
+// IMAGE STUFF
+function readAndPreviewImage(file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const imageSrc = event.target.result;
+        addMediaToLibrary(imageSrc);
+        loadMediaPreviews(); // Refresh the gallery to include the newly added image
+    };
+    reader.readAsDataURL(file);
+}
+
+function addMediaToLibrary(imageSrc) {
+    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+    mediaLibrary.push({ url: imageSrc });
+    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+}
+
+function loadMediaPreviews() {
+    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+    const mediaGallery = document.getElementById('mediaGallery');
+    mediaGallery.innerHTML = ''; // Clear existing previews
+    mediaLibrary.forEach((media, index) => {
+        const imageElement = `<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">`;
+        mediaGallery.innerHTML += imageElement;
+    });
+}
+
 
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
@@ -471,10 +572,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	    element.insertAdjacentHTML('afterend', buttonHTML);
 	});
 
-
-
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
+
 		if (event.target.matches('.sky-edit-button')) {
 			editContentHandler(event, skyKey);
 		}
@@ -496,8 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// VIEW
 			mediaDialog.show();
+
+
 			const body = renderMediaDialog(media);
 			mediaDialog.innerHTML = body;
+
+			loadMediaPreviews();
 		}
 
 		// DIALOGS (CLOSE)
@@ -524,20 +628,31 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (event.target.matches('#addFieldButton')) {
 			event.preventDefault();
 			const newId = Date.now().toString();
-			const field = `
-			<div>
-			<label for="name-${newId}">
-				<input type="text" name="name-${newId}" id="name-${newId}">
-			</label>
-			<label for="type-${newId}">
-				<select name="type-${newId}" id="type-${newId}">
-					<option value="text">Text</option>
-					<option value="textarea">Large Text</option>
-				</select>
-			</label>
-			</div>
-			`
-			event.target.insertAdjacentHTML('beforebegin', field)
+			const fieldHTML = `
+                <div>
+                    <label for="name-${newId}">Field Name</label>
+                    <input type="text" name="name-${newId}" id="name-${newId}" placeholder="Field Name">
+                    
+                    <label for="type-${newId}">Field Type</label>
+                    <select name="type-${newId}" id="type-${newId}">
+                        <option value="text">Text</option>
+                        <option value="textarea">Large Text</option>
+                        <option value="number">Number</option>
+                        <option value="email">Email</option>
+                        <option value="date">Date</option>
+                        <option value="time">Time</option>
+                        <option value="datetime-local">Date & Time</option>
+                        <option value="select">Dropdown</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="radio">Radio Button</option>
+                        <option value="url">URL</option>
+                        <option value="color">Color Picker</option>
+                        <option value="file">File Upload</option>
+                        <!-- Additional field types can be added here -->
+                    </select>
+                </div>
+            `;
+			event.target.insertAdjacentHTML('beforebegin', fieldHTML)
 		}
 
 		// INSTANCES
@@ -566,10 +681,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
+			const collection = readCollection(collectionId);
 			const instance = readInstance(collectionId, instanceId);
 
 			// VIEW
-			const body = renderInstanceEditForm(collectionId, instance);
+			const body = renderInstanceEditForm(collection, instance);
 			collectionsDialog.innerHTML = body;
 		}
 
@@ -584,6 +700,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			// VIEW
 			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
+		}
+
+		if (event.target.matches("#openFileUpload")) {
+			 document.getElementById('media-upload-input').click(); // Trigger file input
 		}
 	});
 
@@ -675,11 +795,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			const tempData = genNewTempFormData(event);
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
-			const collection = readCollection(collectionId);
-			const instances = readInstances(collectionId);
+			
 			const instance = readInstance(collectionId, instanceId);
 
 			updateInstance(tempData, instance, collectionId);
+			const collection = readCollection(collectionId);
+			const instances = readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
@@ -707,6 +828,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			// Close the dialog
 			document.getElementById('editDialog').close();
+		}
+	});
+
+	// CHANGE EVENTS
+	document.body.addEventListener('change', (event) => {
+		if (event.target.matches('#media-upload-input')) {
+			const file = event.target.files[0];
+	        if (file) {
+	            readAndPreviewImage(file);
+	        }
 		}
 	})
 });
