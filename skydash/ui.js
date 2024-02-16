@@ -62,7 +62,7 @@ function injectSkyDashStyles() {
         }
 
         /* Editables */
-        .editable-wrapper {
+		.editable-wrapper {
 		    position: relative;
 		    display: block;
 		     border: 1px solid transparent;
@@ -72,14 +72,22 @@ function injectSkyDashStyles() {
 			border: #7F557B 1px solid;
 		}
 
-		.sky-edit-button {
-			display: none;
+		.sky-edit-toolbar {
 		    position: absolute;
-		    top: 0;
-		    left: 50%;
+		    top: -50%;
+		    left: 0;
+		    display: none;
+		    background-color: #7F557B;
+		    border: 1px solid #7F557B;
+		    padding: 5px;
+		    border-radius: 5px;
+		    white-space: nowrap; /* Keeps the toolbar in a single line */
 		}
 
-		.editable-wrapper:hover .sky-edit-button {
+		.sky-edit-button {
+		}
+
+		.editable-wrapper:hover .sky-edit-toolbar {
 			display: block;
 		}
 
@@ -105,35 +113,97 @@ function applyEditableContent(editableContent) {
     });
 }
 
-function editEditable(element, index, skyKey) {
-    const editDialog = document.getElementById('editDialog');
-
-    // Render and set the form HTML first
-    const body = renderEditableEditForm();
-    editDialog.innerHTML = body;
-
-    // Now the form and its fields are in the DOM, you can access them
-    const editInput = document.getElementById('editInput');
-    const editIndex = document.getElementById('editIndex');
-
-    // Populate the form with the current content and index
-    editInput.value = element.innerHTML; // Ensure this element has content
-    editIndex.value = index;
-
-    // Save skyKey in the form for access during submission
-    editDialog.setAttribute('data-sky-key', skyKey);
-
-    // Show the dialog after everything is set
-    editDialog.show();
-}
-
+// EDIT: FIELDS FOR SPECIFIC TAGS
 function handleEditable(event, skyKey) {
     const index = event.target.getAttribute('data-edit-index');
     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
 
     if(elementToEdit) {
-        editEditable(elementToEdit, index, skyKey);
+        const editDialog = document.getElementById('editDialog');
+
+	    // Render and set the form HTML first
+	    const body = renderEditableEditForm();
+	    editDialog.innerHTML = body;
+
+	    // Now the form and its fields are in the DOM, you can access them
+	    const editInput = document.getElementById('editInput');
+	    const editIndex = document.getElementById('editIndex');
+
+	    // Populate the form with the current content and index
+	    editInput.value = elementToEdit.innerHTML; // Ensure this element has content
+	    editIndex.value = index;
+
+	    // Save skyKey in the form for access during submission
+	    editDialog.setAttribute('data-sky-key', skyKey);
+
+	    // Show the dialog after everything is set
+	    editDialog.show();
     }
+}
+
+function inferEditableType(tagName) {
+    switch (tagName.toUpperCase()) {
+        case 'IMG':
+            return 'image';
+        case 'P':
+            return 'text';
+        case 'DIV':
+            return 'block';
+        // Add more cases as needed
+        default:
+            return 'unknown';
+    }
+}
+
+function handleEditableTextAction(wrapper, action) {
+    const textElement = wrapper.querySelector('p');
+
+    if (action === 'bold') {
+        textElement.style.fontWeight = textElement.style.fontWeight === 'bold' ? '' : 'bold';
+    } else if (action === 'italic') {
+        textElement.style.fontStyle = textElement.style.fontStyle === 'italic' ? '' : 'italic';
+    } else if (action === 'link') {
+        // Simplified example: wrap text in an <a> tag (real implementation should be more robust)
+        if (!textElement.querySelector('a')) {
+            const link = prompt('Enter URL:', 'http://');
+            textElement.innerHTML = `<a href="${link}" target="_blank">${textElement.innerHTML}</a>`;
+        }
+    }
+}
+
+function handleEditableImageAction(wrapper, action) {
+    if (action === 'swap-image') {
+        const imgElement = wrapper.querySelector('img');
+        const imgUrl = prompt('Enter new image URL:');
+        if (imgUrl) imgElement.src = imgUrl;
+    }
+}
+
+function decorateEditables(skyKey, editableElements, storedEditables) {
+    editableElements.forEach((element, index) => {
+        // STORAGE
+        if (!(index in storedEditables)) {
+            storedEditables[index] = element.innerHTML;
+            localStorage.setItem(skyKey, JSON.stringify(storedEditables));
+        }
+
+        // Infer the type of the editable element
+        const editableType = inferEditableType(element.tagName);
+
+        // Determine the suite of buttons based on the editable type
+        const buttonsHTML = renderEditableToolbar(editableType, index);
+
+        // Construct new HTML with a wrapper and specific buttons for the type
+        const newHTML = `
+            <div class="editable-wrapper">
+                ${element.outerHTML}
+                ${buttonsHTML}
+            </div>
+        `;
+
+        // Replace the original element with the new structure
+        element.outerHTML = newHTML;
+    });
 }
 
 // TEMPLATES (HTML)
@@ -146,6 +216,32 @@ function renderMediaDialog(media) {
     `;
 }
 
+function renderEditableToolbar(editableType, index) {
+    switch (editableType) {
+        case 'image':
+            return `<div class="sky-edit-toolbar">
+	                <button class="sky-edit-button" data-edit-index="${index}">Change Image</button>
+                </div>`;
+        case 'text':
+            return `
+            	<div class="sky-edit-toolbar">
+	                <button class="sky-edit-button" data-edit-index="${index}">Edit Text</button>
+	                <button class="sky-edit-button" data-edit-index="${index}">Bold</button>
+	                <button class="sky-edit-button" data-edit-index="${index}">Italicize</button>
+                </div>
+            `;
+        case 'block':
+            return `<div class="sky-edit-toolbar">
+	                <button class="sky-edit-button" data-edit-index="${index}">Edit Block</button>
+                </div>`;
+        default:
+            return `<div class="sky-edit-toolbar">
+	                <button class="sky-edit-button" data-edit-index="${index}">Edit</button>
+                </div>`;
+    }
+}
+
+// EDIT: DYNAMIC GEN OF FIELDS
 function renderEditableEditForm() {
 	return `<form id="editForm">
 			<textarea id="editInput" name="content"></textarea>
@@ -380,12 +476,11 @@ function readMedia() {
 	return {};
 }
 
-function getEditables(skyKey) {
+function readEditables(skyKey) {
 	let editableContent = {};
 
     if (localStorage.getItem(skyKey)) {
         editableContent = JSON.parse(localStorage.getItem(skyKey));
-        applyEditableContent(editableContent);
     }
 
     return editableContent;
@@ -541,47 +636,6 @@ function loadMediaPreviews() {
     });
 }
 
-function inferTypeFromTag(tagName) {
-    switch (tagName.toUpperCase()) {
-        case 'IMG':
-            return 'image';
-        case 'P':
-            return 'text';
-        case 'DIV':
-            return 'block';
-        // Add more cases as needed
-        default:
-            return 'unknown';
-    }
-}
-
-
-function showEditButtons(element, type) {
-    // Assuming you have a function or method to dynamically create and append edit buttons
-    // For demonstration, let's just log the action
-    console.log(`Show edit buttons for ${type}`, element);
-
-    // Example: Dynamically creating a button (simplified for demonstration)
-    const editBtn = document.createElement('button');
-    editBtn.textContent = `Edit ${type}`;
-    editBtn.classList.add('edit-btn');
-    editBtn.setAttribute('data-edit-type', type);
-
-    // Here, append or insert the button into the DOM as needed
-    // This example appends the button directly to the element, which might not always be desirable
-    // You might instead want to append it to a parent element or use a floating action button
-    if (!element.querySelector('.edit-btn')) { // Prevent adding multiple buttons
-        element.appendChild(editBtn);
-    }
-
-    // Add event listener for newly created edit button
-    // Note: You might need to handle button clicks differently or ensure they're removed if not needed anymore
-    editBtn.addEventListener('click', () => {
-        // Call editing function here
-        // For example: editEditable(element, type); - Adjust based on your actual function's parameters
-    });
-}
-
 
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
@@ -596,28 +650,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
 
 	// EDITABLES
-	const editables = getEditables(skyKey);
-
-    editableElements.forEach((element, index) => {
-	    if (!(index in editables)) {
-	        editables[index] = element.innerHTML;
-	        localStorage.setItem(skyKey, JSON.stringify(editables));
-	    }
-
-	    // Wrap the element and button in a new div with relative positioning
-	    const wrapper = document.createElement('div');
-	    wrapper.classList.add('editable-wrapper');
-
-	    // Move the editable element into the wrapper
-	    element.parentNode.insertBefore(wrapper, element);
-	    wrapper.appendChild(element);
-
-	    // Create and insert the button as a sibling to the element, but inside the wrapper
-	    const buttonHTML = `
-	        <button class="sky-edit-button" data-edit-index="${index}">Edit</button>
-	    `;
-	    element.insertAdjacentHTML('afterend', buttonHTML);
-	});
+	applyEditableContent(readEditables(skyKey));
+	decorateEditables(skyKey, editableElements, readEditables(skyKey));
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
@@ -887,12 +921,23 @@ document.addEventListener('DOMContentLoaded', () => {
 	        }
 		}
 	});
-
-	// MOUSEOVER EVENTS
-	document.body.addEventListener('mouseover', (event) => {
-	    if (event.target.matches('[data-sky-editable]')) {
-	        const type = inferTypeFromTag(event.target.tagName);
-	        showEditButtons(event.target, type);
-	    }
-	});
 });
+
+
+// document.addEventListener('DOMContentLoaded', () => {
+//     const editButtons = document.querySelectorAll('.edit-btn');
+
+//     editButtons.forEach(button => {
+//         button.addEventListener('click', (event) => {
+//             const action = button.getAttribute('data-action');
+//             const wrapper = button.closest('.editable-wrapper');
+//             const type = wrapper.getAttribute('data-sky-type');
+
+//             if (type === 'text') {
+//                 handleEditableTextAction(wrapper, action);
+//             } else if (type === 'image') {
+//                 handleEditableImageAction(wrapper, action);
+//             }
+//         });
+//     });
+// });
