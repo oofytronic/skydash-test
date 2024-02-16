@@ -1,5 +1,4 @@
-// SkyDash Script: Client Interface
-
+// SKYDASH
 // UTILITIES
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -13,9 +12,9 @@ function truncateString(str, maxLength = 60) {
     }
 }
 
-// SKYDASH UI | *GOOD FOR NOW*
+// SKYDASH UI (GOOD)
 function createSkyDashUI() {
-	const uiHTML = `
+	const skyHTML = `
 	<div class="skydash-menu">
 		<button id="collectionsButton">Collections</button>
 		<button id="mediaButton">Media Library</button>
@@ -23,17 +22,10 @@ function createSkyDashUI() {
 
 	<dialog data-sky-dialog="collections" id="collectionsDialog" class="collections-dialog"></dialog>
 	<dialog data-sky-dialog="media" id="mediaDialog" class="media-dialog"></dialog>
-	<dialog data-sky-dialog="edit" id="editDialog" class="edit-dialog">
-		<form id="editForm">
-			<textarea id="editInput" name="content"></textarea>
-			<input type="hidden" id="editIndex" name="index">
-			<button type="submit">Save Changes</button>
-			<button type="button" onclick="document.getElementById('editDialog').close();">Cancel</button>
-		</form>
-	</dialog>
+	<dialog data-sky-dialog="edit" id="editDialog" class="edit-dialog"></dialog>
 	`;
 
-	document.body.insertAdjacentHTML('beforeend', uiHTML);
+	document.body.insertAdjacentHTML('beforeend', skyHTML);
 }
 
 function injectSkyDashStyles() {
@@ -103,7 +95,7 @@ function injectSkyDashStyles() {
     document.head.appendChild(styleSheet);
 }
 
-//EDITABLE CONTENT | *GOOD FOR NOW*
+// EDITABLE CONTENT
 function applyEditableContent(editableContent) {
     const editableElements = document.querySelectorAll('[data-sky-editable]');
     editableElements.forEach((element, index) => {
@@ -113,29 +105,34 @@ function applyEditableContent(editableContent) {
     });
 }
 
-function editContent(element, index, skyKey) {
+function editEditable(element, index, skyKey) {
     const editDialog = document.getElementById('editDialog');
+
+    // Render and set the form HTML first
+    const body = renderEditableEditForm();
+    editDialog.innerHTML = body;
+
+    // Now the form and its fields are in the DOM, you can access them
     const editInput = document.getElementById('editInput');
     const editIndex = document.getElementById('editIndex');
 
     // Populate the form with the current content and index
-    editInput.value = element.innerHTML;
+    editInput.value = element.innerHTML; // Ensure this element has content
     editIndex.value = index;
-
-    // Show the dialog
-    editDialog.show(); // or .show() depending on your requirements
 
     // Save skyKey in the form for access during submission
     editDialog.setAttribute('data-sky-key', skyKey);
+
+    // Show the dialog after everything is set
+    editDialog.show();
 }
 
-function editContentHandler(event, skyKey) {
+function handleEditable(event, skyKey) {
     const index = event.target.getAttribute('data-edit-index');
-    // Retrieve the actual element to edit using the index
     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
 
     if(elementToEdit) {
-        editContent(elementToEdit, index, skyKey);
+        editEditable(elementToEdit, index, skyKey);
     }
 }
 
@@ -147,6 +144,15 @@ function renderMediaDialog(media) {
 	    <button id="openFileUpload">Upload Image</button>
 	    <div id="mediaGallery"></div>
     `;
+}
+
+function renderEditableEditForm() {
+	return `<form id="editForm">
+			<textarea id="editInput" name="content"></textarea>
+			<input type="hidden" id="editIndex" name="index">
+			<button type="submit">Save Changes</button>
+			<button type="button" onclick="document.getElementById('editDialog').close();">Cancel</button>
+		</form>`;
 }
 
 function renderCollectionsDialog(collections) {
@@ -535,6 +541,47 @@ function loadMediaPreviews() {
     });
 }
 
+function inferTypeFromTag(tagName) {
+    switch (tagName.toUpperCase()) {
+        case 'IMG':
+            return 'image';
+        case 'P':
+            return 'text';
+        case 'DIV':
+            return 'block';
+        // Add more cases as needed
+        default:
+            return 'unknown';
+    }
+}
+
+
+function showEditButtons(element, type) {
+    // Assuming you have a function or method to dynamically create and append edit buttons
+    // For demonstration, let's just log the action
+    console.log(`Show edit buttons for ${type}`, element);
+
+    // Example: Dynamically creating a button (simplified for demonstration)
+    const editBtn = document.createElement('button');
+    editBtn.textContent = `Edit ${type}`;
+    editBtn.classList.add('edit-btn');
+    editBtn.setAttribute('data-edit-type', type);
+
+    // Here, append or insert the button into the DOM as needed
+    // This example appends the button directly to the element, which might not always be desirable
+    // You might instead want to append it to a parent element or use a floating action button
+    if (!element.querySelector('.edit-btn')) { // Prevent adding multiple buttons
+        element.appendChild(editBtn);
+    }
+
+    // Add event listener for newly created edit button
+    // Note: You might need to handle button clicks differently or ensure they're removed if not needed anymore
+    editBtn.addEventListener('click', () => {
+        // Call editing function here
+        // For example: editEditable(element, type); - Adjust based on your actual function's parameters
+    });
+}
+
 
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
@@ -576,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('click', (event) => {
 
 		if (event.target.matches('.sky-edit-button')) {
-			editContentHandler(event, skyKey);
+			handleEditable(event, skyKey);
 		}
 
 		// DIALOGS (OPEN)
@@ -839,5 +886,13 @@ document.addEventListener('DOMContentLoaded', () => {
 	            readAndPreviewImage(file);
 	        }
 		}
-	})
+	});
+
+	// MOUSEOVER EVENTS
+	document.body.addEventListener('mouseover', (event) => {
+	    if (event.target.matches('[data-sky-editable]')) {
+	        const type = inferTypeFromTag(event.target.tagName);
+	        showEditButtons(event.target, type);
+	    }
+	});
 });
