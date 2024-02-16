@@ -113,7 +113,6 @@ function applyEditableContent(editableContent) {
     });
 }
 
-// EDIT: FIELDS FOR SPECIFIC TAGS
 function handleEditable(event, skyKey) {
     const index = event.target.getAttribute('data-edit-index');
     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
@@ -195,7 +194,7 @@ function decorateEditables(skyKey, editableElements, storedEditables) {
 
         // Construct new HTML with a wrapper and specific buttons for the type
         const newHTML = `
-            <div class="editable-wrapper">
+            <div class="editable-wrapper" data-sky-type="${editableType}">
                 ${element.outerHTML}
                 ${buttonsHTML}
             </div>
@@ -204,6 +203,33 @@ function decorateEditables(skyKey, editableElements, storedEditables) {
         // Replace the original element with the new structure
         element.outerHTML = newHTML;
     });
+}
+
+// MEDIA LIBRARY
+function addMediaToLibrary(imageSrc) {
+    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+    mediaLibrary.push({ url: imageSrc });
+    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+}
+
+function loadMediaPreviews() {
+    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+    const mediaGallery = document.getElementById('mediaGallery');
+    mediaGallery.innerHTML = '';
+    mediaLibrary.forEach((media, index) => {
+        const imageElement = `<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">`;
+        mediaGallery.innerHTML += imageElement;
+    });
+}
+
+function readAndPreviewImage(file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const imageSrc = event.target.result;
+        addMediaToLibrary(imageSrc);
+        loadMediaPreviews();
+    };
+    reader.readAsDataURL(file);
 }
 
 // TEMPLATES (HTML)
@@ -220,28 +246,27 @@ function renderEditableToolbar(editableType, index) {
     switch (editableType) {
         case 'image':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}">Change Image</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="swap-image">Swap Image</button>
                 </div>`;
         case 'text':
             return `
             	<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}">Edit Text</button>
-	                <button class="sky-edit-button" data-edit-index="${index}">Bold</button>
-	                <button class="sky-edit-button" data-edit-index="${index}">Italicize</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="edit">Edit Text</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="bold">Bold</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="italicize">Italicize</button>
                 </div>
             `;
         case 'block':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}">Edit Block</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="block">Edit Block</button>
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}">Edit</button>
+	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="edit">Edit</button>
                 </div>`;
     }
 }
 
-// EDIT: DYNAMIC GEN OF FIELDS
 function renderEditableEditForm() {
 	return `<form id="editForm">
 			<textarea id="editInput" name="content"></textarea>
@@ -609,34 +634,6 @@ function deleteInstance(collectionId, instanceId) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
-// IMAGE STUFF
-function readAndPreviewImage(file) {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const imageSrc = event.target.result;
-        addMediaToLibrary(imageSrc);
-        loadMediaPreviews(); // Refresh the gallery to include the newly added image
-    };
-    reader.readAsDataURL(file);
-}
-
-function addMediaToLibrary(imageSrc) {
-    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
-    mediaLibrary.push({ url: imageSrc });
-    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
-}
-
-function loadMediaPreviews() {
-    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
-    const mediaGallery = document.getElementById('mediaGallery');
-    mediaGallery.innerHTML = ''; // Clear existing previews
-    mediaLibrary.forEach((media, index) => {
-        const imageElement = `<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">`;
-        mediaGallery.innerHTML += imageElement;
-    });
-}
-
-
 // EVENT LISTENERS (EDITABLE)
 document.addEventListener('DOMContentLoaded', () => {
 	createSkyDashUI();
@@ -657,7 +654,17 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('click', (event) => {
 
 		if (event.target.matches('.sky-edit-button')) {
-			handleEditable(event, skyKey);
+			const action = event.target.getAttribute('data-edit-action');
+            const wrapper = event.target.closest('.editable-wrapper');
+            const type = wrapper.getAttribute('data-sky-type');
+
+            if (type === 'text') {
+                handleEditableTextAction(wrapper, action);
+            } else if (type === 'image') {
+                handleEditableImageAction(wrapper, action);
+            } else {
+            	handleEditable(event, skyKey);
+            }
 		}
 
 		// DIALOGS (OPEN)
@@ -922,22 +929,3 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 });
-
-
-// document.addEventListener('DOMContentLoaded', () => {
-//     const editButtons = document.querySelectorAll('.edit-btn');
-
-//     editButtons.forEach(button => {
-//         button.addEventListener('click', (event) => {
-//             const action = button.getAttribute('data-action');
-//             const wrapper = button.closest('.editable-wrapper');
-//             const type = wrapper.getAttribute('data-sky-type');
-
-//             if (type === 'text') {
-//                 handleEditableTextAction(wrapper, action);
-//             } else if (type === 'image') {
-//                 handleEditableImageAction(wrapper, action);
-//             }
-//         });
-//     });
-// });
