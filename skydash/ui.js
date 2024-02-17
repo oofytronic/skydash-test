@@ -652,10 +652,34 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
 	const skyKey = document.body.getAttribute('data-sky-key');
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
+	const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
+
+
+	// Step 3: Apply any stored edits and wrap elements
+    editableElements.forEach((element, index) => {
+        const storedHtml = storedEditables[index];
+        if (storedHtml) {
+            // Apply stored edits
+            element.outerHTML = storedHtml;
+        }
+        // Re-query the element in case it was replaced by storedHtml
+        const updatedElement = document.querySelectorAll('[data-sky-editable]')[index];
+        wrapElement(updatedElement, index);
+    });
+
+    // Event delegation for toolbar actions
+    document.body.addEventListener('click', event => {
+        if (event.target.matches('[data-sky-action="edit"]')) {
+            const wrapper = event.target.closest('.editable-wrapper');
+            const index = wrapper.getAttribute('data-sky-index');
+            editContent(wrapper, index, skyKey);
+        }
+        // Handle other actions like bold, italic, etc.
+    });
 
 	// EDITABLES
-	applyEditableContent(editableElements, readEditables(skyKey));
-	decorateEditables(skyKey, editableElements, readEditables(skyKey));
+	//applyEditableContent(editableElements, readEditables(skyKey));
+	//decorateEditables(skyKey, editableElements, readEditables(skyKey));
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
@@ -935,3 +959,43 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 });
+
+
+function wrapElement(element, index) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'editable-wrapper';
+    wrapper.setAttribute('data-sky-index', index);
+    element.parentNode.insertBefore(wrapper, element);
+    wrapper.appendChild(element);
+
+    // Add the toolbar
+    const toolbar = generateToolbar(index);
+    wrapper.appendChild(toolbar);
+
+    // Adjust CSS as necessary to position the toolbar
+}
+
+function generateToolbar(index) {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'edit-toolbar';
+    toolbar.innerHTML = `<button data-sky-action="edit" data-sky-index="${index}">Edit</button>`;
+    // Add more buttons as needed
+    return toolbar;
+}
+
+function editContent(wrapper, index, skyKey) {
+    const editable = wrapper.querySelector('[data-sky-editable]');
+    // For simplicity, let's say we're editing text content
+    const newText = prompt('Edit text:', editable.textContent);
+    if (newText !== null) {
+        editable.textContent = newText;
+        // Update localStorage
+        updateLocalStorage(wrapper, index, skyKey);
+    }
+}
+
+function updateLocalStorage(wrapper, index, skyKey) {
+    const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
+    storedEditables[index] = wrapper.outerHTML;
+    localStorage.setItem(skyKey, JSON.stringify(storedEditables));
+}
