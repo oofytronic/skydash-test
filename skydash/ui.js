@@ -103,11 +103,10 @@ function injectSkyDashStyles() {
 }
 
 // EDITABLE CONTENT
-function applyEditableContent(editableContent) {
-    const editableElements = document.querySelectorAll('[data-sky-editable]');
+function applyEditableContent(editableElements, storedEditables) {
     editableElements.forEach((element, index) => {
-        if (index in editableContent) {
-            element.outerHTML = editableContent[index];
+        if (index in storedEditables) {
+            element.outerHTML = storedEditables[index];
         }
     });
 }
@@ -180,12 +179,11 @@ function handleEditableImageAction(wrapper, action, skyKey, index) {
     }
 }
 
-
 function decorateEditables(skyKey, editableElements, storedEditables) {
     editableElements.forEach((element, index) => {
         // STORAGE
         if (!(index in storedEditables)) {
-            storedEditables[index] = element.outerHTML;
+            storedEditables[index] = element.innerHTML;
             localStorage.setItem(skyKey, JSON.stringify(storedEditables));
         }
 
@@ -203,10 +201,8 @@ function decorateEditables(skyKey, editableElements, storedEditables) {
             </div>
         `;
 
-        console.log(newHTML)
-
         // Replace the original element with the new structure
-        element.innerHTML = newHTML;
+        element.outerHTML = newHTML;
     });
 }
 
@@ -658,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
 
 	// EDITABLES
-	applyEditableContent(readEditables(skyKey));
+	applyEditableContent(editableElements, readEditables(skyKey));
 	decorateEditables(skyKey, editableElements, readEditables(skyKey));
 
 	// EVENTS (CLICK)
