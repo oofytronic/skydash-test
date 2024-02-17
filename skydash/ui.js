@@ -74,13 +74,12 @@ function injectSkyDashStyles() {
 
 		.sky-edit-toolbar {
 		    position: absolute;
-		    top: -50%;
+		    top: 0;
 		    left: 0;
 		    display: none;
 		    background-color: #7F557B;
 		    border: 1px solid #7F557B;
 		    padding: 5px;
-		    border-radius: 5px;
 		    white-space: nowrap; /* Keeps the toolbar in a single line */
 		}
 
@@ -108,34 +107,26 @@ function applyEditableContent(editableContent) {
     const editableElements = document.querySelectorAll('[data-sky-editable]');
     editableElements.forEach((element, index) => {
         if (index in editableContent) {
-            element.innerHTML = editableContent[index];
+            element.outerHTML = editableContent[index];
         }
     });
 }
 
-function handleEditable(event, skyKey) {
+function handleEditableInForm(event, skyKey) {
     const index = event.target.getAttribute('data-edit-index');
     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
 
     if(elementToEdit) {
         const editDialog = document.getElementById('editDialog');
 
-	    // Render and set the form HTML first
 	    const body = renderEditableEditForm();
 	    editDialog.innerHTML = body;
 
-	    // Now the form and its fields are in the DOM, you can access them
-	    const editInput = document.getElementById('editInput');
 	    const editIndex = document.getElementById('editIndex');
-
-	    // Populate the form with the current content and index
-	    editInput.value = elementToEdit.innerHTML; // Ensure this element has content
 	    editIndex.value = index;
 
-	    // Save skyKey in the form for access during submission
 	    editDialog.setAttribute('data-sky-key', skyKey);
 
-	    // Show the dialog after everything is set
 	    editDialog.show();
     }
 }
@@ -154,35 +145,47 @@ function inferEditableType(tagName) {
     }
 }
 
-function handleEditableTextAction(wrapper, action) {
-    const textElement = wrapper.querySelector('p');
+function handleEditableTextAction(wrapper, action, skyKey, index) {
+    const textElement = wrapper.querySelector('[data-sky-editable]');
+    let newContent = '';
 
     if (action === 'bold') {
         textElement.style.fontWeight = textElement.style.fontWeight === 'bold' ? '' : 'bold';
+        newContent = textElement.outerHTML;
     } else if (action === 'italic') {
         textElement.style.fontStyle = textElement.style.fontStyle === 'italic' ? '' : 'italic';
+        newContent = textElement.outerHTML;
     } else if (action === 'link') {
-        // Simplified example: wrap text in an <a> tag (real implementation should be more robust)
         if (!textElement.querySelector('a')) {
             const link = prompt('Enter URL:', 'http://');
             textElement.innerHTML = `<a href="${link}" target="_blank">${textElement.innerHTML}</a>`;
+            newContent = textElement.outerHTML;
+        }
+    }
+
+    // Update localStorage with the new content
+    updateEditable(skyKey, index, newContent);
+}
+
+function handleEditableImageAction(wrapper, action, skyKey, index) {
+    if (action === 'swap-image') {
+        const imgElement = wrapper.querySelector('img');
+        const imgUrl = prompt('Enter new image URL:');
+        if (imgUrl) {
+            imgElement.src = imgUrl;
+            const newContent = imgElement.outerHTML;
+            // Update localStorage with the new content
+            updateEditable(skyKey, index, newContent);
         }
     }
 }
 
-function handleEditableImageAction(wrapper, action) {
-    if (action === 'swap-image') {
-        const imgElement = wrapper.querySelector('img');
-        const imgUrl = prompt('Enter new image URL:');
-        if (imgUrl) imgElement.src = imgUrl;
-    }
-}
 
 function decorateEditables(skyKey, editableElements, storedEditables) {
     editableElements.forEach((element, index) => {
         // STORAGE
         if (!(index in storedEditables)) {
-            storedEditables[index] = element.innerHTML;
+            storedEditables[index] = element.outerHTML;
             localStorage.setItem(skyKey, JSON.stringify(storedEditables));
         }
 
@@ -194,14 +197,16 @@ function decorateEditables(skyKey, editableElements, storedEditables) {
 
         // Construct new HTML with a wrapper and specific buttons for the type
         const newHTML = `
-            <div class="editable-wrapper" data-sky-type="${editableType}">
+            <div class="editable-wrapper" data-sky-type="${editableType}" data-edit-index="${index}">
                 ${element.outerHTML}
                 ${buttonsHTML}
             </div>
         `;
 
+        console.log(newHTML)
+
         // Replace the original element with the new structure
-        element.outerHTML = newHTML;
+        element.innerHTML = newHTML;
     });
 }
 
@@ -511,6 +516,12 @@ function readEditables(skyKey) {
     return editableContent;
 }
 
+function updateEditable(skyKey, index, newContent) {
+    const editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
+    editableContent[index] = newContent;
+    localStorage.setItem(skyKey, JSON.stringify(editableContent));
+}
+
 function readCollections() {
     // Attempt to retrieve the collections object from localStorage
     const collectionsJSON = localStorage.getItem('collections');
@@ -634,7 +645,7 @@ function deleteInstance(collectionId, instanceId) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
-// EVENT LISTENERS (EDITABLE)
+// EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', () => {
 	createSkyDashUI();
 	injectSkyDashStyles();
@@ -657,13 +668,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			const action = event.target.getAttribute('data-edit-action');
             const wrapper = event.target.closest('.editable-wrapper');
             const type = wrapper.getAttribute('data-sky-type');
+            const index = wrapper.getAttribute('data-edit-index'); 
 
             if (type === 'text') {
-                handleEditableTextAction(wrapper, action);
+                handleEditableTextAction(wrapper, action, skyKey, index);
             } else if (type === 'image') {
-                handleEditableImageAction(wrapper, action);
-            } else {
-            	handleEditable(event, skyKey);
+                handleEditableImageAction(wrapper, action, skyKey, index);
             }
 		}
 
