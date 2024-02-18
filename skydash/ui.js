@@ -962,40 +962,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function wrapElement(element, index) {
+    // Create the wrapper div and set its class
     const wrapper = document.createElement('div');
     wrapper.className = 'editable-wrapper';
     wrapper.setAttribute('data-sky-index', index);
+
+    // Infer the type of the editable element to determine the toolbar to use
+    const editableType = inferEditableType(element.tagName);
+    const toolbarHTML = renderEditableToolbar(editableType, index);
+    
+    // Insert the wrapper right before the element in the DOM
     element.parentNode.insertBefore(wrapper, element);
+    
+    // Move the element inside the wrapper
     wrapper.appendChild(element);
 
-    // Add the toolbar
-    const toolbar = generateToolbar(index);
-    wrapper.appendChild(toolbar);
-
-    // Adjust CSS as necessary to position the toolbar
-}
-
-function generateToolbar(index) {
+    // Add the toolbar HTML to the wrapper. Since renderEditableToolbar returns a string,
+    // we need to convert this string into DOM elements.
     const toolbar = document.createElement('div');
-    toolbar.className = 'edit-toolbar';
-    toolbar.innerHTML = `<button data-sky-action="edit" data-sky-index="${index}">Edit</button>`;
-    // Add more buttons as needed
-    return toolbar;
+    toolbar.innerHTML = toolbarHTML;
+    // Append each toolbar button as a child of the wrapper. 
+    Array.from(toolbar.children).forEach(child => {
+        wrapper.appendChild(child);
+    });
 }
 
+// Adjusted function to handle button clicks properly
 function editContent(wrapper, index, skyKey) {
     const editable = wrapper.querySelector('[data-sky-editable]');
-    // For simplicity, let's say we're editing text content
-    const newText = prompt('Edit text:', editable.textContent);
-    if (newText !== null) {
-        editable.textContent = newText;
-        // Update localStorage
-        updateLocalStorage(wrapper, index, skyKey);
+    // Assuming editing text content for simplicity
+    const newText = prompt('Edit text:', editable.innerText || editable.textContent);
+    if (newText !== null && newText !== editable.innerText) {
+        editable.innerText = newText; // Update the text content
+        // Update the localStorage with new wrapper HTML
+        updateEditableStorage(index, skyKey, wrapper.outerHTML);
     }
 }
 
-function updateLocalStorage(wrapper, index, skyKey) {
+// Adjusted function for updating localStorage based on index and skyKey
+function updateEditableStorage(index, skyKey, newContent) {
     const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
-    storedEditables[index] = wrapper.outerHTML;
-    localStorage.setItem(skyKey, JSON.stringify(storedEditables));
+    storedEditables[index] = newContent; // Update or add the new content by index
+    localStorage.setItem(skyKey, JSON.stringify(storedEditables)); // Save back to localStorage
 }

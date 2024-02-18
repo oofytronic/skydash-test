@@ -21,7 +21,7 @@
 	    background-color: #F6F6F6;;
 	  }
 	  .logo {
-	    width: 100px; /* Adjust based on your logo's size */
+	    height: 50px; /* Adjust based on your logo's size */
 	  }
 	  .nav-form {
 	    display: flex;
@@ -69,8 +69,10 @@
 </head>
 <body data-sky-collection="article-one">
 	<nav data-sky-component="nav" class="header">
-		<img src="logo-placeholder.png" alt="Logo" class="logo">
-		<a href="/article-one">Article One</a>
+		<div style="display: flex; align-items: center; gap: 1rem;">
+			<img src="/assets/zeppelin.png" alt="Logo" class="logo">
+			<a href="/article-one">Article One</a>
+		</div>
 		<form class="nav-form">
 			<input type="email" placeholder="Enter your email">
 			<button type="submit">Subscribe</button>
