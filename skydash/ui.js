@@ -286,6 +286,8 @@ function renderEditableToolbar(editableType, index) {
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="edit">Edit Text</button>
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
                 </div>
             `;
         case 'block':
