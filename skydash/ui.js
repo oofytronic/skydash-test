@@ -65,7 +65,9 @@ function injectSkyDashStyles() {
 		.editable-wrapper {
 		    position: relative;
 		    display: block;
-		     border: 1px solid transparent;
+		    border: 1px solid transparent;
+		    width: fit-content;
+		    height: fit-content;
 		}
 
 		.editable-wrapper:hover {
@@ -103,24 +105,24 @@ function injectSkyDashStyles() {
 }
 
 // EDITABLE CONTENT
-function handleEditableInForm(event, skyKey) {
-    const index = event.target.getAttribute('data-edit-index');
-    const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
+// function handleEditableInForm(event, skyKey) {
+//     const index = event.target.getAttribute('data-edit-index');
+//     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
 
-    if(elementToEdit) {
-        const editDialog = document.getElementById('editDialog');
+//     if(elementToEdit) {
+//         const editDialog = document.getElementById('editDialog');
 
-	    const body = renderEditableEditForm();
-	    editDialog.innerHTML = body;
+// 	    const body = renderEditableEditForm();
+// 	    editDialog.innerHTML = body;
 
-	    const editIndex = document.getElementById('editIndex');
-	    editIndex.value = index;
+// 	    const editIndex = document.getElementById('editIndex');
+// 	    editIndex.value = index;
 
-	    editDialog.setAttribute('data-sky-key', skyKey);
+// 	    editDialog.setAttribute('data-sky-key', skyKey);
 
-	    editDialog.show();
-    }
-}
+// 	    editDialog.show();
+//     }
+// }
 
 function inferEditableType(tagName) {
     switch (tagName.toUpperCase()) {
@@ -130,7 +132,8 @@ function inferEditableType(tagName) {
             return 'text';
         case 'DIV':
             return 'block';
-        // Add more cases as needed
+        case 'SECTION':
+            return 'block';
         default:
             return 'unknown';
     }
@@ -172,44 +175,62 @@ function handleEditableImageAction(wrapper, action, skyKey, index) {
 }
 
 function wrapEditableElement(element, index) {
-    // Create the wrapper div and set its class
     const wrapper = document.createElement('div');
     wrapper.className = 'editable-wrapper';
     wrapper.setAttribute('data-sky-index', index);
 
-    // Infer the type of the editable element to determine the toolbar to use
     const editableType = inferEditableType(element.tagName);
     const toolbarHTML = renderEditableToolbar(editableType, index);
     
-    // Insert the wrapper right before the element in the DOM
     element.parentNode.insertBefore(wrapper, element);
     
-    // Move the element inside the wrapper
     wrapper.appendChild(element);
 
-    // Add the toolbar HTML to the wrapper. Since renderEditableToolbar returns a string,
-    // we need to convert this string into DOM elements.
     const toolbar = document.createElement('div');
     toolbar.innerHTML = toolbarHTML;
+
     // Append each toolbar button as a child of the wrapper. 
     Array.from(toolbar.children).forEach(child => {
         wrapper.appendChild(child);
     });
 }
 
-// Adjusted function to handle button clicks properly
-function editEditable(wrapper, index, skyKey) {
+// WWWORKING
+function editEditable(wrapper, button, skyKey) {
+	const index = wrapper.getAttribute('data-sky-index');
     const editable = wrapper.querySelector('[data-sky-editable]');
-    // Assuming editing text content for simplicity
-    const newText = prompt('Edit text:', editable.innerText || editable.textContent);
-    if (newText !== null && newText !== editable.innerText) {
-        editable.innerText = newText; // Update the text content
-        // Update the localStorage with new wrapper HTML
-        updateEditableStorage(index, skyKey, wrapper.outerHTML);
+    const type = button.getAttribute('data-sky-type');
+    const action = button.getAttribute('data-sky-action');
+
+    if (type === "text") {
+    	if (action === "edit") {
+    		const newText = prompt('Edit text:', editable.innerText || editable.textContent);
+
+		    if (newText !== null && newText !== editable.innerText) {
+		        editable.innerText = newText; // Update the text content
+
+		        updateEditableStorage(index, skyKey, wrapper.outerHTML);
+		    }
+    	}
+
+    	if (action === "bold") {
+    		alert('BOLD');
+    	}
+
+    	if (action === "italicize") {
+    		alert('ITALICIZE');
+    	}
+    }
+
+    if (type === "block") {
+    	alert('Editing BLOCK');
+    }
+
+    if (type === "image") {
+    	alert('Editing IMAGE');
     }
 }
 
-// Adjusted function for updating localStorage based on index and skyKey
 function updateEditableStorage(index, skyKey, newContent) {
     const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
     storedEditables[index] = newContent; // Update or add the new content by index
@@ -257,23 +278,23 @@ function renderEditableToolbar(editableType, index) {
     switch (editableType) {
         case 'image':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="swap-image">Swap Image</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="swap-image">Swap Image</button>
                 </div>`;
         case 'text':
             return `
             	<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="edit">Edit Text</button>
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="bold">Bold</button>
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="italicize">Italicize</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="edit">Edit Text</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
                 </div>
             `;
         case 'block':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="block">Edit Block</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-edit-index="${index}" data-edit-action="edit">Edit</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="edit">Edit</button>
                 </div>`;
     }
 }
@@ -678,24 +699,11 @@ document.addEventListener('DOMContentLoaded', () => {
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
 
-		if (event.target.matches('[data-sky-action="edit"]')) {
-            const wrapper = event.target.closest('.editable-wrapper');
-            const index = wrapper.getAttribute('data-sky-index');
-            editEditable(wrapper, index, skyKey);
-        }
-
 		if (event.target.matches('.sky-edit-button')) {
-			const action = event.target.getAttribute('data-edit-action');
             const wrapper = event.target.closest('.editable-wrapper');
-            const type = wrapper.getAttribute('data-sky-type');
-            const index = wrapper.getAttribute('data-edit-index'); 
-
-            if (type === 'text') {
-                handleEditableTextAction(wrapper, action, skyKey, index);
-            } else if (type === 'image') {
-                handleEditableImageAction(wrapper, action, skyKey, index);
-            }
-		}
+            const button = event.target;
+            editEditable(wrapper, button, skyKey);
+        }
 
 		// DIALOGS (OPEN)
 		if (event.target.matches('#collectionsButton')) {
@@ -825,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
-	// SUBMIT EVENTS
+	// EVENTS (SUBMIT)
 	document.body.addEventListener('submit', (event) => {
 		// CREATE COLLECTION
 		if (event.target.matches('#new-collection-form')) {
@@ -949,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
-	// CHANGE EVENTS
+	// EVENTS (CHANGE)
 	document.body.addEventListener('change', (event) => {
 		if (event.target.matches('#media-upload-input')) {
 			const file = event.target.files[0];
