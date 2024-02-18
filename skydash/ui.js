@@ -664,8 +664,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
 	const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
 
-
-	// Step 3: Apply any stored edits and wrap elements
     editableElements.forEach((element, index) => {
         const storedHtml = storedEditables[index];
         if (storedHtml) {
@@ -677,22 +675,14 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapEditableElement(updatedElement, index);
     });
 
-    // Event delegation for toolbar actions
-    document.body.addEventListener('click', event => {
-        if (event.target.matches('[data-sky-action="edit"]')) {
+	// EVENTS (CLICK)
+	document.body.addEventListener('click', (event) => {
+
+		if (event.target.matches('[data-sky-action="edit"]')) {
             const wrapper = event.target.closest('.editable-wrapper');
             const index = wrapper.getAttribute('data-sky-index');
             editEditable(wrapper, index, skyKey);
         }
-        // Handle other actions like bold, italic, etc.
-    });
-
-	// EDITABLES
-	//applyEditableContent(editableElements, readEditables(skyKey));
-	//decorateEditables(skyKey, editableElements, readEditables(skyKey));
-
-	// EVENTS (CLICK)
-	document.body.addEventListener('click', (event) => {
 
 		if (event.target.matches('.sky-edit-button')) {
 			const action = event.target.getAttribute('data-edit-action');

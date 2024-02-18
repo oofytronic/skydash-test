@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>TEST WEBSITE</title>
-	<script src="skydash/ui.js" type="module"></script>
+	<script src="/skydash/ui.js" type="module"></script>
 
 	<!-- General -->
 	<style>
@@ -67,10 +67,10 @@
 	  }
 	</style>
 </head>
-<body data-sky-collection="article-one">
+<body data-sky-collection="articles" data-sky-collection-id="article-one">
 	<nav data-sky-component="nav" class="header">
 		<div style="display: flex; align-items: center; gap: 1rem;">
-			<img src="/assets/zeppelin.png" alt="Logo" class="logo">
+			<a href="/"><img src="/assets/zeppelin.png" alt="Logo" class="logo"></a>
 			<a href="/article-one">Article One</a>
 		</div>
 		<form class="nav-form">
@@ -80,22 +80,10 @@
 	</nav>
 
 	<section class="main-content" style="height: 100dvh; display: flex; flex-direction: column; gap: 2rem;">
-		<p data-sky-id="title">Something WWWinged this Way Comes...</p>
-
-		<div style="display: flex; flex-direction: column; gap: 1rem;" data-sky-id="body">
-			<p>The World Wide Web deserves a comeback.</p>
-
-			<p>It has been reduced to the utilization of a handful of platforms, a majority of them using a device-native app as their primary medium of interaction. While these platforms have spurred on content discovery and made information more accessible, they have done so while stifling the essence of the web: an ever-expanding network of linked documents.</p>
-
-			<p>In the context of content creation and content discovery, websites today are predominantly seen as archival structures, where content creators and businesses store their content and information once they have made it available elsewhere first. Don't get me wrong, today's content platforms are marvels of technology. They have spurred on the exchanging of information and have made content creation and consumption easy and seamless. So, what's next?</p>
-
-			<p>This isn't the end. Humanity continues to grow and adapt. And, the new foundation of the web is already being created and implemented. It is a foundation that puts the user and content creator back in control. It is a foundation where those humble, linked documents have superpowers. I'm building on that foundation and I'm so excited to share the technologies I'm building with others who share the vision of a self-soverign, lightweight, fun and free web.</p>
-
-			<p>Let's open the web back up once again.</p>
+		<div style="display: flex; flex-direction: column; gap: 1rem;">
+			<p>This is the first article</p>
 
 			<p>OOF | Owner and CEO | feathermode</p>
-
-			<p>If you'd like to be notified when I release the first of a suite of technologies, you can signup below.</p>
 		</div>
 	</section>
 
