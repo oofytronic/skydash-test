@@ -105,24 +105,72 @@ function injectSkyDashStyles() {
 }
 
 // EDITABLE CONTENT
-// function handleEditableInForm(event, skyKey) {
-//     const index = event.target.getAttribute('data-edit-index');
-//     const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
+function handleEditableInForm(event, skyKey) {
+    const index = event.target.getAttribute('data-edit-index');
+    const elementToEdit = document.querySelectorAll('[data-sky-editable]')[index];
 
-//     if(elementToEdit) {
-//         const editDialog = document.getElementById('editDialog');
+    if(elementToEdit) {
+        const editDialog = document.getElementById('editDialog');
 
-// 	    const body = renderEditableEditForm();
-// 	    editDialog.innerHTML = body;
+	    const body = renderEditableEditForm();
+	    editDialog.innerHTML = body;
 
-// 	    const editIndex = document.getElementById('editIndex');
-// 	    editIndex.value = index;
+	    const editIndex = document.getElementById('editIndex');
+	    editIndex.value = index;
 
-// 	    editDialog.setAttribute('data-sky-key', skyKey);
+	    editDialog.setAttribute('data-sky-key', skyKey);
 
-// 	    editDialog.show();
-//     }
-// }
+	    editDialog.show();
+    }
+}
+
+function openFieldEditor(field) {
+
+	function activateFieldInDialog(fieldName) {
+	    // Find and focus or highlight the field for editing
+	    // This assumes you have a consistent naming or ID scheme for inputs
+	    const input = document.querySelector(`[name="${fieldName}"]`);
+	    if (input) {
+	        input.focus(); // Or add a class to highlight
+	    }
+	}
+
+	const fieldValue = field.getAttribute('data-sky-field');
+
+    // Step 1: Parse the data-sky-field value
+    const parts = fieldValue.split('.');
+    if (parts.length !== 3) {
+        console.error('Invalid data-sky-field format');
+        return;
+    }
+    const [collectionName, instanceId, fieldName] = parts;
+
+    // Step 2: Retrieve the collection instance data
+    const collections = JSON.parse(localStorage.getItem('collections')) || {};
+    const collection = collections.find(collection => collection.pluralId === collectionName);
+    if (!collection) {
+        console.error('Collection not found');
+        return;
+    }
+
+    const instance = collection.instances.find(instance => instance.id === instanceId);
+    if (!instance) {
+        console.error('Instance not found');
+        return;
+    }
+
+    // Step 3: Open the collections dialog with the instance data
+    const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
+    // VIEW
+	const body = renderInstanceEditForm(collection, instance);
+	collectionsDialog.innerHTML = body;
+	collectionsDialog.show();
+
+
+    // Step 4: Focus on the relevant field within the dialog
+    // Assuming you have a way to link field names to form inputs
+    activateFieldInDialog(fieldName);
+}
 
 function inferEditableType(tagName) {
     switch (tagName.toUpperCase()) {
@@ -174,13 +222,32 @@ function handleEditableImageAction(wrapper, action, skyKey, index) {
     }
 }
 
+function handleEditableField(wrapper, action, skyKey, index) {
+    if (action === 'swap-image') {
+        const imgElement = wrapper.querySelector('img');
+        const imgUrl = prompt('Enter new image URL:');
+        if (imgUrl) {
+            imgElement.src = imgUrl;
+            const newContent = imgElement.outerHTML;
+            // Update localStorage with the new content
+            updateEditable(skyKey, index, newContent);
+        }
+    }
+}
+
 function wrapEditableElement(element, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'editable-wrapper';
     wrapper.setAttribute('data-sky-index', index);
 
-    const editableType = inferEditableType(element.tagName);
-    const toolbarHTML = renderEditableToolbar(editableType, index);
+    let toolbarHTML;
+
+    if (element.getAttribute('data-sky-field')) {
+    	toolbarHTML = renderEditableToolbar("field", index);
+    } else {
+    	const editableType = inferEditableType(element.tagName);
+    	toolbarHTML = renderEditableToolbar(editableType, index);
+    }
     
     element.parentNode.insertBefore(wrapper, element);
     
@@ -195,11 +262,11 @@ function wrapEditableElement(element, index) {
     });
 }
 
-// WWWORKING
 function editEditable(wrapper, button, skyKey) {
 	const index = wrapper.getAttribute('data-sky-index');
+	const type = button.getAttribute('data-sky-type');
+	const field = wrapper.querySelector('[data-sky-field]');
     const editable = wrapper.querySelector('[data-sky-editable]');
-    const type = button.getAttribute('data-sky-type');
     const action = button.getAttribute('data-sky-action');
 
     if (type === "text") {
@@ -229,6 +296,10 @@ function editEditable(wrapper, button, skyKey) {
     if (type === "image") {
     	alert('Editing IMAGE');
     }
+
+    if (type === "field") {
+    	openFieldEditor(field);
+    }
 }
 
 function updateEditableStorage(index, skyKey, newContent) {
@@ -243,6 +314,10 @@ function addMediaToLibrary(imageSrc) {
     mediaLibrary.push({ url: imageSrc });
     localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
 }
+
+function removeMedia(imageSrc) {}
+
+function useMediaFromLibrary() {}
 
 function loadMediaPreviews() {
     const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
@@ -293,6 +368,10 @@ function renderEditableToolbar(editableType, index) {
         case 'block':
             return `<div class="sky-edit-toolbar">
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
+                </div>`;
+        case 'field':
+            return `<div class="sky-edit-toolbar">
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Collection Field</button>
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
@@ -685,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
 	const skyKey = document.body.getAttribute('data-sky-key');
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
+	const editableFields = document.querySelectorAll('[data-sky-field]');
 	const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
 
     editableElements.forEach((element, index) => {
@@ -696,6 +776,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-query the element in case it was replaced by storedHtml
         const updatedElement = document.querySelectorAll('[data-sky-editable]')[index];
         wrapEditableElement(updatedElement, index);
+    });
+
+    editableFields.forEach((element, index) => {
+    	wrapEditableElement(element, index);
     });
 
 	// EVENTS (CLICK)
