@@ -60,6 +60,7 @@ function injectSkyDashStyles() {
             bottom: 6rem;
             right: 1rem;
             margin-right: 0;
+            max-height: 70%;
         }
 
         #dashboardDialog, #mediaDialog {
