@@ -38,7 +38,7 @@ function injectSkyDashStyles() {
     	}
         /* Dialog */
     	dialog {
-			border: 1px solid #ccc;
+			border: 2px solid #ccc;
 			border-radius: 10px;
 			padding: 20px;
 			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -72,12 +72,17 @@ function injectSkyDashStyles() {
 			z-index: 10000;
 		}
 
+		#mediaGallery {
+			display: flex;
+			gap: 1rem;
+		}
+
         /* SkyDash Menu */
         .skydash-menu {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
-            border: 1px solid #ccc;
+            border: 2px solid #ccc;
 			border-radius: 10px;
 			padding: 20px;
 			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
