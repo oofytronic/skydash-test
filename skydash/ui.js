@@ -32,6 +32,10 @@ function createSkyDashUI() {
 
 function injectSkyDashStyles() {
     const cssStyles = `
+    	button {
+    		height: fit-content;
+    		width: fit-content;
+    	}
         /* Dialog */
     	dialog {
 			border: 1px solid #ccc;
@@ -51,21 +55,21 @@ function injectSkyDashStyles() {
           background-color: rgb(0 0 0 / 0%);
         }
 
-        #collectionsDialog, #mediaDialog, #editDialog {
+        #collectionsDialog, #editDialog {
             position: fixed;
-            top: 1rem;
+            bottom: 6rem;
             right: 1rem;
             margin-right: 0;
         }
 
-        #dashboardDialog {
-		  position: fixed;
-		  width: 90%;
-			height: 90%;
-		  top: 50%;
-		  left: 50%;
-		  transform: translate(-50%, -50%);
-		  z-index: 10000;
+        #dashboardDialog, #mediaDialog {
+			position: fixed;
+			width: calc(100% - 4rem);
+			height: calc(100% - 4rem);
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			z-index: 10000;
 		}
 
         /* SkyDash Menu */
@@ -347,7 +351,7 @@ function loadMediaPreviews() {
     mediaGallery.innerHTML = '';
     mediaLibrary.forEach((media, index) => {
         const imageElement = `
-        <div style="border: 1px solid black;">
+        <div style="display: flex; flex-direction: column; border: 1px solid black; width: fit-content; height: fit-content;">
         	<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">
         	<button class="delete-media-button">Delete</button>
         </div>
@@ -369,10 +373,18 @@ function readAndPreviewImage(file) {
 // TEMPLATES (HTML)
 function renderMediaDialog(media) {
     return `
-        <button data-sky-dialog-close="media">Close</button>
-	    <input type="file" id="media-upload-input" accept="image/*" style="display:none;">
-	    <button id="openFileUpload">Upload Image</button>
+    <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+    	<div style="display: flex; justify-content: space-between;">
+	    	<h1>Media Library</h1>
+	    	<div style="display: flex; gap: 1rem;">
+			    <input type="file" id="media-upload-input" accept="image/*" style="display:none;">
+			    <button id="openFileUpload">Upload Image</button>
+			    <button data-sky-dialog-close="media">Close</button>
+		    </div>
+		</div>
+	    
 	    <div id="mediaGallery"></div>
+    </div>
     `;
 }
 
@@ -418,9 +430,13 @@ function renderEditableEditForm() {
 
 function renderDashboardDialog(collections) {
 	return `
-		<button data-sky-dialog-close="dashboard">Close</button>
+		<div style="display: flex; justify-content: space-between; width: 100%;">
+	    	<h1>Dashboard</h1>
+	    	<div style="display: flex; gap: 1rem;">
+			    <button data-sky-dialog-close="dashboard">Close</button>
+		    </div>
+		</div>
 		<div>
-			<h1>Dashboard</h1>
 			<div>
 				<h2>Users</h2>
 			</div>
