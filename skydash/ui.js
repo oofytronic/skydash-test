@@ -16,10 +16,12 @@ function truncateString(str, maxLength = 60) {
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
+		<button id="dashboardButton">Dashboard</button>
 		<button id="collectionsButton">Collections</button>
 		<button id="mediaButton">Media Library</button>
 	</div>
 
+	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
 	<dialog data-sky-dialog="collections" id="collectionsDialog" class="collections-dialog"></dialog>
 	<dialog data-sky-dialog="media" id="mediaDialog" class="media-dialog"></dialog>
 	<dialog data-sky-dialog="edit" id="editDialog" class="edit-dialog"></dialog>
@@ -31,19 +33,17 @@ function createSkyDashUI() {
 function injectSkyDashStyles() {
     const cssStyles = `
         /* Dialog */
-        dialog[open] {
+    	dialog {
+			border: 1px solid #ccc;
+			border-radius: 10px;
+			padding: 20px;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+			background-color: #F6F6F6;
+			overflow-y: auto;
+			z-index: 10000;
+    	}
 
-        }
-
-        dialog {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            margin-right: 0;
-            border: 1px solid black;
-        }
-
-        dialog::backdrop {
+    	dialog::backdrop {
           background-color: rgb(0 0 0 / 0%);
         }
 
@@ -51,13 +51,32 @@ function injectSkyDashStyles() {
           background-color: rgb(0 0 0 / 0%);
         }
 
+        #collectionsDialog, #mediaDialog, #editDialog {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            margin-right: 0;
+        }
+
+        #dashboardDialog {
+		  position: fixed;
+		  width: 90%;
+			height: 90%;
+		  top: 50%;
+		  left: 50%;
+		  transform: translate(-50%, -50%);
+		  z-index: 10000;
+		}
+
         /* SkyDash Menu */
         .skydash-menu {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
-            border: 1px black solid;
-            padding: 1rem;
+            border: 1px solid #ccc;
+			border-radius: 10px;
+			padding: 20px;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             background-color: #F6F6F6;
         }
 
@@ -66,6 +85,7 @@ function injectSkyDashStyles() {
 		    position: relative;
 		    display: block;
 		    border: 1px solid transparent;
+		    border-radius: 0 5px 5px 5px;
 		    width: fit-content;
 		    height: fit-content;
 		}
@@ -76,11 +96,12 @@ function injectSkyDashStyles() {
 
 		.sky-edit-toolbar {
 		    position: absolute;
-		    top: 0;
-		    left: 0;
+		    top: -33px;
+		    left: -1px;
 		    display: none;
 		    background-color: #7F557B;
 		    border: 1px solid #7F557B;
+		    border-radius: 5px 5px 0 0;
 		    padding: 5px;
 		    white-space: nowrap; /* Keeps the toolbar in a single line */
 		}
@@ -127,11 +148,9 @@ function handleEditableInForm(event, skyKey) {
 function openFieldEditor(field) {
 
 	function activateFieldInDialog(fieldName) {
-	    // Find and focus or highlight the field for editing
-	    // This assumes you have a consistent naming or ID scheme for inputs
 	    const input = document.querySelector(`[name="${fieldName}"]`);
 	    if (input) {
-	        input.focus(); // Or add a class to highlight
+	        input.focus();
 	    }
 	}
 
@@ -145,7 +164,6 @@ function openFieldEditor(field) {
     }
     const [collectionName, instanceId, fieldName] = parts;
 
-    // Step 2: Retrieve the collection instance data
     const collections = JSON.parse(localStorage.getItem('collections')) || {};
     const collection = collections.find(collection => collection.pluralId === collectionName);
     if (!collection) {
@@ -159,16 +177,11 @@ function openFieldEditor(field) {
         return;
     }
 
-    // Step 3: Open the collections dialog with the instance data
     const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
-    // VIEW
 	const body = renderInstanceEditForm(collection, instance);
 	collectionsDialog.innerHTML = body;
 	collectionsDialog.show();
 
-
-    // Step 4: Focus on the relevant field within the dialog
-    // Assuming you have a way to link field names to form inputs
     activateFieldInDialog(fieldName);
 }
 
@@ -315,7 +328,16 @@ function addMediaToLibrary(imageSrc) {
     localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
 }
 
-function removeMedia(imageSrc) {}
+// INCOMPLETE
+function deleteMedia(imageSrc) {
+	 // Filter out the instance to delete
+    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary'));
+
+    mediaLibrary
+
+    // Save the updated collections back to localStorage
+    localStorage.setItem('collections', JSON.stringify(collections));
+}
 
 function useMediaFromLibrary() {}
 
@@ -324,7 +346,12 @@ function loadMediaPreviews() {
     const mediaGallery = document.getElementById('mediaGallery');
     mediaGallery.innerHTML = '';
     mediaLibrary.forEach((media, index) => {
-        const imageElement = `<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">`;
+        const imageElement = `
+        <div style="border: 1px solid black;">
+        	<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">
+        	<button class="delete-media-button">Delete</button>
+        </div>
+        `;
         mediaGallery.innerHTML += imageElement;
     });
 }
@@ -387,6 +414,27 @@ function renderEditableEditForm() {
 			<button type="submit">Save Changes</button>
 			<button type="button" onclick="document.getElementById('editDialog').close();">Cancel</button>
 		</form>`;
+}
+
+function renderDashboardDialog(collections) {
+	return `
+		<button data-sky-dialog-close="dashboard">Close</button>
+		<div>
+			<h1>Dashboard</h1>
+			<div>
+				<h2>Users</h2>
+			</div>
+			<div>
+				<h2>Collections</h2>
+			</div>
+			<div>
+				<h2>Site Overview</h2>
+			</div>
+			<div>
+				<h2>Account Settings</h2>
+			</div>
+		</div>
+	`;
 }
 
 function renderCollectionsDialog(collections) {
@@ -759,6 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	injectSkyDashStyles();
 
 	// SKY ELEMENTS
+	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
 	const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
 	const mediaDialog = document.querySelector('[data-sky-dialog="media"]');
 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
@@ -792,6 +841,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 		// DIALOGS (OPEN)
+        if (event.target.matches('#dashboardButton')) {
+        	dashboardDialog.show();
+        	const body = renderDashboardDialog();
+			dashboardDialog.innerHTML = body;
+        }
+
 		if (event.target.matches('#collectionsButton')) {
 			// DATA
 			const collections = readCollections();
@@ -816,7 +871,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			loadMediaPreviews();
 		}
 
+		if (event.target.matches('.delete-media-button')) {
+			deleteMedia();
+			loadMediaPreviews();
+		}
+
 		// DIALOGS (CLOSE)
+		if (event.target.matches('[data-sky-dialog-close="dashboard"]')) {
+			dashboardDialog.close();
+		}
+
 		if (event.target.matches('[data-sky-dialog-close="collections"]')) {
 			collectionsDialog.close();
 		}
