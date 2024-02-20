@@ -25,6 +25,7 @@ function createSkyDashUI() {
 	<dialog data-sky-dialog="collections" id="collectionsDialog" class="collections-dialog"></dialog>
 	<dialog data-sky-dialog="media" id="mediaDialog" class="media-dialog"></dialog>
 	<dialog data-sky-dialog="edit" id="editDialog" class="edit-dialog"></dialog>
+	<dialog data-sky-dialog="components" id="componentsDialog" class="components-dialog"></dialog>
 	`;
 
 	document.body.insertAdjacentHTML('beforeend', skyHTML);
@@ -55,11 +56,12 @@ function injectSkyDashStyles() {
           background-color: rgb(0 0 0 / 0%);
         }
 
-        #collectionsDialog, #editDialog {
+        #collectionsDialog, #componentsDialog, #editDialog {
             position: fixed;
             bottom: 6rem;
             right: 1rem;
             margin-right: 0;
+            min-height: 30%;
             max-height: 70%;
         }
 
@@ -94,14 +96,31 @@ function injectSkyDashStyles() {
 		.editable-wrapper {
 		    position: relative;
 		    display: block;
-		    border: none;
-		    border-color: transparent;
+		    /* border: none;
+		    border-color: transparent; */
 		    border-radius: 0 5px 5px 5px;
-		    transition: border-color 0.25s;
+		    transition: 0.25s;
+		    width: fit-content;
+		    height: fit-content;
 		}
 
 		.editable-wrapper:hover {
-			border: #7F557B 1px solid;
+			/* border: #7F557B 1px solid; */
+			box-shadow: inset 0 0 0 2px #7F557B;
+		}
+
+		.editable-wrapper-open {
+		    position: relative;
+		    display: block;
+		    /* border: none;
+		    border-color: transparent; */
+		    border-radius: 0 5px 5px 5px;
+		    transition: 0.25s;
+		}
+
+		.editable-wrapper-open:hover {
+			/* border: #7F557B 1px solid; */
+			box-shadow: inset 0 0 0 2px #7F557B;
 		}
 
 		.sky-edit-toolbar {
@@ -131,7 +150,7 @@ function injectSkyDashStyles() {
 		.sky-edit-button {
 		}
 
-		.editable-wrapper:hover .sky-edit-toolbar, .editable-wrapper:hover .sky-edit-toolbar-inside {
+		.editable-wrapper:hover .sky-edit-toolbar, .editable-wrapper-open:hover .sky-edit-toolbar-inside {
 			display: block;
 		}
 
@@ -207,6 +226,13 @@ function openFieldEditor(field) {
     activateFieldInDialog(fieldName);
 }
 
+function openComponentEditor(component) {
+	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
+	const body = renderComponentsDialog();
+	componentsDialog.innerHTML = body;
+	componentsDialog.show();
+}
+
 function inferEditableType(tagName) {
     switch (tagName.toUpperCase()) {
         case 'IMG':
@@ -272,16 +298,20 @@ function handleEditableField(wrapper, action, skyKey, index) {
 
 function wrapEditableElement(element, index) {
     const wrapper = document.createElement('div');
-    wrapper.className = 'editable-wrapper';
-    wrapper.setAttribute('data-sky-index', index);
 
     let toolbarHTML;
 
     if (element.getAttribute('data-sky-field')) {
+    	wrapper.className = 'editable-wrapper-open';
+    	wrapper.setAttribute('data-sky-index', index);			
     	toolbarHTML = renderEditableToolbar("field", index);
     } else if (element.getAttribute('data-sky-component')) {
+    	wrapper.className = 'editable-wrapper-open';
+    	wrapper.setAttribute('data-sky-index', index);			
     	toolbarHTML = renderEditableToolbar('component', index);
     } else {
+    	wrapper.className = 'editable-wrapper';
+    	wrapper.setAttribute('data-sky-index', index);			
     	const editableType = inferEditableType(element.tagName);
     	toolbarHTML = renderEditableToolbar(editableType, index);
     }
@@ -305,6 +335,8 @@ function editEditable(wrapper, button, skyKey) {
 	const field = wrapper.querySelector('[data-sky-field]');
     const editable = wrapper.querySelector('[data-sky-editable]');
     const action = button.getAttribute('data-sky-action');
+
+    console.log('here')
 
     if (type === "text") {
     	if (action === "edit") {
@@ -331,11 +363,20 @@ function editEditable(wrapper, button, skyKey) {
     }
 
     if (type === "image") {
-    	alert('Editing IMAGE');
+    	const imageToSwap = button.closest('.editable-wrapper, .editable-wrapper-open').querySelector('img'); // Adjust selector as needed
+
+	    // Open the media library and define what to do once an image is selected
+	    openMediaLibrary(function(selectedImageSrc) {
+	      swapImageSource(imageToSwap, selectedImageSrc, index, skyKey, wrapper);
+	    });
     }
 
     if (type === "field") {
     	openFieldEditor(field);
+    }
+
+    if (type === "component") {
+    	openComponentEditor();
     }
 }
 
@@ -350,6 +391,41 @@ function addMediaToLibrary(imageSrc) {
     const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
     mediaLibrary.push({ url: imageSrc });
     localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+}
+
+// Function to open the media library
+function openMediaLibrary(callback) {
+	// Open the media library dialog
+	const mediaDialog = document.getElementById('mediaDialog')
+	mediaDialog.show();
+	const body = renderMediaDialog();
+	mediaDialog.innerHTML = body;
+	loadMediaPreviews();
+
+  // Remove any previous click event listeners to prevent multiple assignments
+  const mediaGallery = document.getElementById('mediaGallery');
+  const existingImages = mediaGallery.querySelectorAll('img');
+  existingImages.forEach(img => {
+    img.removeEventListener('click', handleMediaSelection);
+  });
+
+  // Add a click event listener to each image for selection
+  existingImages.forEach(img => {
+    img.addEventListener('click', handleMediaSelection);
+  });
+
+  // Handle selection of an image
+  function handleMediaSelection(event) {
+    const selectedImageSrc = event.target.src; // Get the src of the selected image
+    callback(selectedImageSrc); // Pass the selected image src back to the callback
+    document.getElementById('mediaDialog').close(); // Close the media library dialog
+  }
+}
+
+// Function to swap the image source
+function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
+  oldImageElement.src = newImageSrc; // Swap the src attribute of the original image
+  updateEditableStorage(index, skyKey, wrapper.outerHTML);
 }
 
 // INCOMPLETE
@@ -372,7 +448,7 @@ function loadMediaPreviews() {
     mediaLibrary.forEach((media, index) => {
         const imageElement = `
         <div style="display: flex; flex-direction: column; border: 1px solid black; width: fit-content; height: fit-content;">
-        	<img src="${media.url}" alt="Image ${index}" style="width: 100px; margin: 5px;">
+        	<img src="${media.url}" alt="Image ${index}" data-media-index="${index}" style="width: 100px; margin: 5px;">
         	<button class="delete-media-button">Delete</button>
         </div>
         `;
@@ -430,7 +506,7 @@ function renderEditableToolbar(editableType, index) {
                 </div>`;
         case 'field':
             return `<div class="sky-edit-toolbar-inside">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Collection Field</button>
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="field">Edit Collection Field</button>
                 </div>`;
         case 'component':
             return `<div class="sky-edit-toolbar-inside">
@@ -474,6 +550,12 @@ function renderDashboardDialog(collections) {
 				<h2>Account Settings</h2>
 			</div>
 		</div>
+	`;
+}
+
+function renderComponentsDialog(collections) {
+	return `
+		<button data-sky-dialog-close="components">Close</button>
 	`;
 }
 
@@ -849,6 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	// SKY ELEMENTS
 	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
 	const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
+	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
 	const mediaDialog = document.querySelector('[data-sky-dialog="media"]');
 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
 	const skyKey = document.body.getAttribute('data-sky-key');
@@ -880,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('click', (event) => {
 
 		if (event.target.matches('.sky-edit-button')) {
-            const wrapper = event.target.closest('.editable-wrapper');
+            const wrapper = event.target.closest('.editable-wrapper , .editable-wrapper-open');
             const button = event.target;
             editEditable(wrapper, button, skyKey);
         }
@@ -910,17 +993,28 @@ document.addEventListener('DOMContentLoaded', () => {
 			mediaDialog.show();
 
 
-			const body = renderMediaDialog(media);
+			const body = renderMediaDialog();
 			mediaDialog.innerHTML = body;
 
 			loadMediaPreviews();
 		}
 
 		if (event.target.matches('.delete-media-button')) {
-			deleteMedia();
-			loadMediaPreviews();
-		}
+		    // Get the index of the media item to delete
+		    const index = parseInt(event.target.getAttribute('data-media-index'), 10);
 
+		    // Retrieve the current media library from localStorage
+		    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+
+		    // Remove the selected media item
+		    mediaLibrary.splice(index, 1);
+
+		    // Save the updated media library back to localStorage
+		    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+
+		    // Update the preview
+		    loadMediaPreviews();
+ 		}
 		// DIALOGS (CLOSE)
 		if (event.target.matches('[data-sky-dialog-close="dashboard"]')) {
 			dashboardDialog.close();
@@ -932,6 +1026,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		if (event.target.matches('[data-sky-dialog-close="media"]')) {
 			mediaDialog.close();
+		}
+
+		if (event.target.matches('[data-sky-dialog-close="components"]')) {
+			componentsDialog.close();
 		}
 
 		// COLLECTIONS
