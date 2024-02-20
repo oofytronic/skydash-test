@@ -1261,16 +1261,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		    const newContent = tempData.newEditable;
 
-			// // Retrieve the editable content object and update the specific item
-			// let editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
-			// editableContent[index] = newContent;
-			// localStorage.setItem(skyKey, JSON.stringify(editableContent));
+			// Retrieve the editable content object and update the specific item
+			let editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
+			editableContent[index] = newContent;
+			localStorage.setItem(skyKey, JSON.stringify(editableContent));
 
-			// // Update the content on the page
-			// const editableElements = document.querySelectorAll('[data-sky-editable]');
-			// if (editableElements[index]) {
-			//     editableElements[index].innerHTML = newContent;
-			// }
+			// Update the content on the page
+			const editableElements = document.querySelectorAll('[data-sky-editable]');
+			if (editableElements[index]) {
+			    editableElements[index].innerHTML = newContent;
+			}
 
 			// Close the dialog
 			document.getElementById('editDialog').close();
