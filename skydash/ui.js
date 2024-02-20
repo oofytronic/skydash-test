@@ -336,17 +336,27 @@ function editEditable(wrapper, button, skyKey) {
     const editable = wrapper.querySelector('[data-sky-editable]');
     const action = button.getAttribute('data-sky-action');
 
-    console.log('here')
-
     if (type === "text") {
     	if (action === "edit") {
-    		const newText = prompt('Edit text:', editable.innerText || editable.textContent);
+    		const editDialog = document.querySelector('[data-sky-dialog="edit"');
+    		editDialog.show();
+    		const body = renderEditDialog();
+    		editDialog.innerHTML = body;
 
-		    if (newText !== null && newText !== editable.innerText) {
-		        editable.innerText = newText; // Update the text content
+    		editDialog.innerHTML += `
+    		<form id="editForm" data-sky-index="${index}">
+    		<input name="newEditable" id="newEditable" type="text" value="${editable.innerText || editable.textContent}">
+    		<button type="submit" data-sky-index="${index}">Save</button>
+    		</form>
+    		`;
 
-		        updateEditableStorage(index, skyKey, wrapper.outerHTML);
-		    }
+    		// const newText = prompt('Edit text:', editable.innerText || editable.textContent);
+
+		    // if (newText !== null && newText !== editable.innerText) {
+		    //     editable.innerText = newText; // Update the text content
+
+		    //     updateEditableStorage(index, skyKey, wrapper.outerHTML);
+		    // }
     	}
 
     	if (action === "bold") {
@@ -438,8 +448,6 @@ function deleteMedia(imageSrc) {
     // Save the updated collections back to localStorage
     localStorage.setItem('collections', JSON.stringify(collections));
 }
-
-function useMediaFromLibrary() {}
 
 function loadMediaPreviews() {
     const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
@@ -556,6 +564,12 @@ function renderDashboardDialog(collections) {
 function renderComponentsDialog(collections) {
 	return `
 		<button data-sky-dialog-close="components">Close</button>
+	`;
+}
+
+function renderEditDialog(editable) {
+	return `
+		<button data-sky-dialog-close="edit">Cancel</button>
 	`;
 }
 
@@ -1032,6 +1046,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			componentsDialog.close();
 		}
 
+		if (event.target.matches('[data-sky-dialog-close="edit"]')) {
+			editDialog.close();
+		}
+
 		// COLLECTIONS
 		if (event.target.matches('.delete-collection-button')) {
 			// DATA
@@ -1231,19 +1249,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			const editDialog = document.getElementById('editDialog');
 		    const skyKey = editDialog.getAttribute('data-sky-key');
-		    const index = document.getElementById('editIndex').value;
-		    const newContent = document.getElementById('editInput').value;
+		    const index = event.target.getAttribute('data-sky-index');
 
-			// Retrieve the editable content object and update the specific item
-			let editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
-			editableContent[index] = newContent;
-			localStorage.setItem(skyKey, JSON.stringify(editableContent));
+		    const formData = new FormData(event.target);
+			const tempData = {};
+			tempData.newId = Date.now().toString();
 
-			// Update the content on the page
-			const editableElements = document.querySelectorAll('[data-sky-editable]');
-			if (editableElements[index]) {
-			    editableElements[index].innerHTML = newContent;
+			for (let [key, value] of formData.entries()) {
+				tempData[key] = value;
 			}
+
+		    const newContent = tempData.newEditable;
+
+			// // Retrieve the editable content object and update the specific item
+			// let editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
+			// editableContent[index] = newContent;
+			// localStorage.setItem(skyKey, JSON.stringify(editableContent));
+
+			// // Update the content on the page
+			// const editableElements = document.querySelectorAll('[data-sky-editable]');
+			// if (editableElements[index]) {
+			//     editableElements[index].innerHTML = newContent;
+			// }
 
 			// Close the dialog
 			document.getElementById('editDialog').close();
