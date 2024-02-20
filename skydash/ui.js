@@ -369,7 +369,25 @@ function editEditable(wrapper, button, skyKey) {
     }
 
     if (type === "block") {
-    	alert('Editing BLOCK');
+
+    	const editDialog = document.querySelector('[data-sky-dialog="edit"');
+    		editDialog.show();
+    		const body = renderEditDialog();
+    		editDialog.innerHTML = body;
+
+    		editDialog.innerHTML += `
+    		<form id="editForm" data-sky-index="${index}">
+    		<div id="markdown-editor">
+			  <textarea id="editor" rows="10" cols="50">${editable.innerText || editable.textContent}</textarea>
+			  <div>
+			    <button type="button" id="bold-btn">Bold</button>
+			    <!-- Add more buttons for other Markdown features here -->
+			  </div>
+			  <pre id="preview"></pre>
+			</div>
+    		<button type="submit" data-sky-index="${index}">Save</button>
+    		</form>
+    		`;
     }
 
     if (type === "image") {
@@ -937,6 +955,15 @@ function deleteInstance(collectionId, instanceId) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
+
+
+
+function updatePreview(markdownText) {
+  // This function updates the preview area. For now, it just shows the Markdown.
+  // You might use a Markdown to HTML converter here for a live preview.
+  document.getElementById('preview').textContent = markdownText;
+}
+
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', () => {
 	createSkyDashUI();
@@ -975,6 +1002,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
+		// WWWORKING
+		if (event.target.matches('#bold-btn')) {
+			const textarea = document.getElementById('editor');
+			  const start = textarea.selectionStart;
+			  const end = textarea.selectionEnd;
+			  const selectedText = textarea.value.substring(start, end);
+			  const beforeText = textarea.value.substring(0, start);
+			  const afterText = textarea.value.substring(end);
+
+			  // Wrap selected text in Markdown bold syntax
+			  const newText = `${beforeText}**${selectedText}**${afterText}`;
+			  textarea.value = newText;
+
+			  // Update the preview
+			  updatePreview(newText);
+		}
 
 		if (event.target.matches('.sky-edit-button')) {
             const wrapper = event.target.closest('.editable-wrapper , .editable-wrapper-open');
