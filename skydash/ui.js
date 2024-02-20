@@ -94,10 +94,10 @@ function injectSkyDashStyles() {
 		.editable-wrapper {
 		    position: relative;
 		    display: block;
-		    border: 1px solid transparent;
+		    border: none;
+		    border-color: transparent;
 		    border-radius: 0 5px 5px 5px;
-		    width: fit-content;
-		    height: fit-content;
+		    transition: border-color 0.25s;
 		}
 
 		.editable-wrapper:hover {
@@ -116,10 +116,22 @@ function injectSkyDashStyles() {
 		    white-space: nowrap; /* Keeps the toolbar in a single line */
 		}
 
+		.sky-edit-toolbar-inside {
+		    position: absolute;
+		    top: 0px;
+		    left: -1px;
+		    display: none;
+		    background-color: #7F557B;
+		    border: 1px solid #7F557B;
+		    border-radius: 0 0 5px 0;
+		    padding: 5px;
+		    white-space: nowrap; /* Keeps the toolbar in a single line */
+		}
+
 		.sky-edit-button {
 		}
 
-		.editable-wrapper:hover .sky-edit-toolbar {
+		.editable-wrapper:hover .sky-edit-toolbar, .editable-wrapper:hover .sky-edit-toolbar-inside {
 			display: block;
 		}
 
@@ -267,6 +279,8 @@ function wrapEditableElement(element, index) {
 
     if (element.getAttribute('data-sky-field')) {
     	toolbarHTML = renderEditableToolbar("field", index);
+    } else if (element.getAttribute('data-sky-component')) {
+    	toolbarHTML = renderEditableToolbar('component', index);
     } else {
     	const editableType = inferEditableType(element.tagName);
     	toolbarHTML = renderEditableToolbar(editableType, index);
@@ -415,8 +429,12 @@ function renderEditableToolbar(editableType, index) {
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
                 </div>`;
         case 'field':
-            return `<div class="sky-edit-toolbar">
+            return `<div class="sky-edit-toolbar-inside">
 	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Collection Field</button>
+                </div>`;
+        case 'component':
+            return `<div class="sky-edit-toolbar-inside">
+	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="component">Edit Component</button>
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
@@ -836,6 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	const skyKey = document.body.getAttribute('data-sky-key');
 	const editableElements = document.querySelectorAll('[data-sky-editable]');
 	const editableFields = document.querySelectorAll('[data-sky-field]');
+	const editableComponents = document.querySelectorAll('[data-sky-component]');
 	const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
 
     editableElements.forEach((element, index) => {
@@ -852,6 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
     editableFields.forEach((element, index) => {
     	wrapEditableElement(element, index);
     });
+
+    editableComponents.forEach((element, index) => {
+    	wrapEditableElement(element, index);
+    })
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
