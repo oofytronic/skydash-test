@@ -380,8 +380,7 @@ function editEditable(wrapper, button, skyKey) {
     		<div id="markdown-editor">
 			  <textarea id="editor" rows="10" cols="50">${editable.innerText || editable.textContent}</textarea>
 			  <div>
-			    <button type="button" id="bold-btn">Bold</button>
-			    <!-- Add more buttons for other Markdown features here -->
+			    <button type="button" data-sky-mark="bold">Bold</button>
 			  </div>
 			  <pre id="preview"></pre>
 			</div>
@@ -958,11 +957,34 @@ function deleteInstance(collectionId, instanceId) {
 
 
 
-function updatePreview(markdownText) {
-  // This function updates the preview area. For now, it just shows the Markdown.
-  // You might use a Markdown to HTML converter here for a live preview.
-  document.getElementById('preview').textContent = markdownText;
+function applyMarkdown(action) {
+    const editor = document.getElementById('editor');
+    const { value, selectionStart, selectionEnd } = editor;
+    let markdownSymbol;
+
+    switch (action) {
+        case 'bold':
+            markdownSymbol = '**';
+            break;
+        case 'italic':
+            markdownSymbol = '*';
+            break;
+        default:
+            markdownSymbol = '';
+    }
+
+    if (!markdownSymbol) return;
+
+    const beforeText = value.substring(0, selectionStart);
+    const selectedText = value.substring(selectionStart, selectionEnd);
+    const afterText = value.substring(selectionEnd);
+
+    editor.value = beforeText + markdownSymbol + selectedText + markdownSymbol + afterText;
+
+    // Set new cursor position
+    editor.selectionStart = editor.selectionEnd = selectionEnd + 2 * markdownSymbol.length;
 }
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', () => {
@@ -1003,21 +1025,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
 		// WWWORKING
-		if (event.target.matches('#bold-btn')) {
-			const textarea = document.getElementById('editor');
-			  const start = textarea.selectionStart;
-			  const end = textarea.selectionEnd;
-			  const selectedText = textarea.value.substring(start, end);
-			  const beforeText = textarea.value.substring(0, start);
-			  const afterText = textarea.value.substring(end);
-
-			  // Wrap selected text in Markdown bold syntax
-			  const newText = `${beforeText}**${selectedText}**${afterText}`;
-			  textarea.value = newText;
-
-			  // Update the preview
-			  updatePreview(newText);
-		}
+		if (event.target.matches('button[data-sky-mark]')) {
+	        const action = event.target.getAttribute('data-sky-mark');
+	        applyMarkdown(action);
+	    }
 
 		if (event.target.matches('.sky-edit-button')) {
             const wrapper = event.target.closest('.editable-wrapper , .editable-wrapper-open');
