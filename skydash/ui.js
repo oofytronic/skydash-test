@@ -4,9 +4,11 @@ import {capitalize, truncateString} from './utilities.js';
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
+		
 		<button data-sky-open="dashboard">Dashboard</button>
 		<button data-sky-open="collections">Collections</button>
 		<button data-sky-open="media">Media Library</button>
+		<div style="width: 30px; height: 30px; border-radius: 50%; background: black;"></div>
 	</div>
 
 	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
@@ -51,6 +53,7 @@ function injectSkyDashStyles() {
             margin-right: 0;
             min-height: 30%;
             max-height: 70%;
+            width: 30%;
         }
 
         #dashboardDialog, #mediaDialog {
@@ -73,6 +76,9 @@ function injectSkyDashStyles() {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
             border: 2px solid #ccc;
 			border-radius: 10px;
 			padding: 20px;
