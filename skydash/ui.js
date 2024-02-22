@@ -704,6 +704,38 @@ function genNewTempFormData(event) {
 }
 
 //CACHE LAYER
+async function openDB() {
+  if (!window.indexedDB) {
+    console.error("IndexedDB is not supported by this browser.");
+    throw new Error("IndexedDB not supported");
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("SkyDashDatabase", 1);
+
+    request.onerror = (event) => {
+      console.error("Database error: ", event.target.error);
+      reject(event.target.error);
+    };
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      resolve(db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("collections")) {
+        db.createObjectStore("collections", { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains("instances")) {
+        db.createObjectStore("instances", { keyPath: "id" });
+      }
+      // Define other object stores here
+    };
+  });
+}
+
 function readEditables(skyKey) {
 	let editableContent = {};
 
@@ -726,72 +758,105 @@ function updateEditableStorage(index, skyKey, newContent) {
     localStorage.setItem(skyKey, JSON.stringify(storedEditables)); // Save back to localStorage
 }
 
-function readCollections() {
-    // Attempt to retrieve the collections object from localStorage
-    const collectionsJSON = localStorage.getItem('collections');
+// function readCollections() {
+//     // Attempt to retrieve the collections object from localStorage
+//     const collectionsJSON = localStorage.getItem('collections');
 
-    // Check if the collections object exists in localStorage
-    if (collectionsJSON) {
-        try {
-            // Parse the JSON string back into an object and return it
-            return JSON.parse(collectionsJSON);
-        } catch (e) {
-            console.error('Error parsing collections from localStorage:', e);
-            // Return a default value in case of error
-            return {};
-        }
-    } else {
-        // Return a default value if the collections object doesn't exist in localStorage
-        return {};
-    }
+//     // Check if the collections object exists in localStorage
+//     if (collectionsJSON) {
+//         try {
+//             // Parse the JSON string back into an object and return it
+//             return JSON.parse(collectionsJSON);
+//         } catch (e) {
+//             console.error('Error parsing collections from localStorage:', e);
+//             // Return a default value in case of error
+//             return {};
+//         }
+//     } else {
+//         // Return a default value if the collections object doesn't exist in localStorage
+//         return {};
+//     }
+// }
+
+async function readCollections() {
+  const db = await openDB();
+  const tx = db.transaction("collections", "readonly");
+  const store = tx.objectStore("collections");
+  const request = store.getAll();
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
 }
 
-function readCollection(collectionId) {
-	const collections = readCollections();
+
+async function readCollection(collectionId) {
+	const collections = await readCollections();
 	const collection = collections.find(c => c.id === collectionId);
 	return collection;
 }
 
-function createCollection(newCollection) {
-	// Retrieve existing collections from localStorage or initialize to an empty object/array
-	let collections = JSON.parse(localStorage.getItem('collections')) || [];
+// function createCollection(newCollection) {
+// 	// Retrieve existing collections from localStorage or initialize to an empty object/array
+// 	let collections = JSON.parse(localStorage.getItem('collections')) || [];
 
-	// Add the new collection
-	collections.push(newCollection);
+// 	// Add the new collection
+// 	collections.push(newCollection);
 
-	// Save the updated collections back to localStorage
-	localStorage.setItem('collections', JSON.stringify(collections));
+// 	// Save the updated collections back to localStorage
+// 	localStorage.setItem('collections', JSON.stringify(collections));
 
-	// Optionally, refresh the collections display or close the dialog
+// 	// Optionally, refresh the collections display or close the dialog
+// }
+
+async function createCollection(collection) {
+  const db = await openDB();
+  const tx = db.transaction("collections", "readwrite");
+  const store = tx.objectStore("collections");
+  const request = store.add(collection);
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
 }
 
 function updateCollection() {
 	// Update Fields (*optional* fields only)
 }
 
-function deleteCollection(collectionId) {
-	const collections = readCollections();
+async function deleteCollection(collectionId) {
+	const collections = await readCollections();
     const newCollections = collections.filter(c => c.id !== collectionId);
     localStorage.setItem('collections', JSON.stringify(newCollections));
 }
 
-function readInstances(collectionId) {
-	const collections = readCollections();
+async function readInstances(collectionId) {
+	const collections = await readCollections();
 	const collection = collections.find(c => c.id === collectionId);
 	const instances = collection.instances;
 	return instances;
 }
 
-function readInstance(collectionId, instanceId) {
-	const collections = readCollections();
+async function readInstance(collectionId, instanceId) {
+	const collections = await readCollections();
 	const instances = readInstances(collectionId);
 	const instance = instances.find(i => i.id === instanceId);
 	return instance;
 }
 
-function createInstance(collectionId, newInstance) {
+async function createInstance(collectionId, newInstance) {
     // Retrieve existing collections from localStorage
-    const collections = readCollections();
+    const collections = await readCollections();
     
     // Find the collection by ID
     const collectionIndex = collections.findIndex(c => c.id === collectionId);
@@ -806,10 +871,10 @@ function createInstance(collectionId, newInstance) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
-function updateInstance(newInstance, currentInstance, collectionId) {
+async function updateInstance(newInstance, currentInstance, collectionId) {
 	const updatedInstance = {...currentInstance, ...newInstance};
     
-    let collections = readCollections();
+    let collections = await readCollections();
 
     const collectionIndex = collections.findIndex(collection => collection.id === collectionId);
     if (collectionIndex === -1) {
@@ -829,8 +894,8 @@ function updateInstance(newInstance, currentInstance, collectionId) {
     localStorage.setItem('collections', JSON.stringify(collections));
 }
 
-function deleteInstance(collectionId, instanceId) {
-    const collections = readCollections();
+async function deleteInstance(collectionId, instanceId) {
+    const collections = await readCollections();
     
     // Find the collection by ID
     const collectionIndex = collections.findIndex(c => c.id === collectionId);
@@ -888,6 +953,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	createSkyDashUI();
 	injectSkyDashStyles();
 
+	openDB();
+
 	// SKY ELEMENTS
 	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
 	const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
@@ -920,7 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
 	// EVENTS (CLICK)
-	document.body.addEventListener('click', (event) => {
+	document.body.addEventListener('click', async (event) => {
 
 		if (event.target.matches('button[data-sky-mark]')) {
 			event.preventDefault();
@@ -943,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		if (event.target.matches('[data-sky-open="collections"]')) {
 			// DATA
-			const collections = readCollections();
+			const collections = await readCollections();
 
 			// VIEW
 			collectionsDialog.show();
@@ -1004,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
 			deleteCollection(collectionId);
-			const collections = readCollections();
+			const collections = await readCollections();
 
 			// VIEW
 			const body = renderCollectionsDialog(collections);
@@ -1094,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	});
 
 	// EVENTS (SUBMIT)
-	document.body.addEventListener('submit', (event) => {
+	document.body.addEventListener('submit', async (event) => {
 		// CREATE COLLECTION
 		if (event.target.matches('#new-collection-form')) {
 			event.preventDefault();
@@ -1142,8 +1209,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 			const collection = genNewCollectionObject(tempData);
 			collection.schema = getGroupsFromFormData(formData);
-			createCollection(collection);
-			const collections = readCollections();
+			await createCollection(collection);
+			const collections = await readCollections();
 
 			// VIEW
 			const body = renderCollectionsDialog(collections);
