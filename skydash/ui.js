@@ -1,24 +1,12 @@
-// SKYDASH
-// UTILITIES
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function truncateString(str, maxLength = 60) {
-    if (str.length > maxLength) {
-        return str.substring(0, maxLength - 3) + '...';
-    } else {
-        return str;
-    }
-}
+import {capitalize, truncateString} from './utilities.js';
 
 // SKYDASH UI (GOOD)
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
-		<button id="dashboardButton">Dashboard</button>
-		<button id="collectionsButton">Collections</button>
-		<button id="mediaButton">Media Library</button>
+		<button data-sky-open="dashboard">Dashboard</button>
+		<button data-sky-open="collections">Collections</button>
+		<button data-sky-open="media">Media Library</button>
 	</div>
 
 	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
@@ -510,7 +498,7 @@ function renderMediaDialog(media) {
 	    	<div style="display: flex; gap: 1rem;">
 			    <input type="file" id="media-upload-input" accept="image/*" style="display:none;">
 			    <button id="openFileUpload">Upload Image</button>
-			    <button data-sky-dialog-close="media">Close</button>
+			    <button data-sky-close="media">Close</button>
 		    </div>
 		</div>
 	    
@@ -568,7 +556,7 @@ function renderDashboardDialog(collections) {
 		<div style="display: flex; justify-content: space-between; width: 100%;">
 	    	<h1>Dashboard</h1>
 	    	<div style="display: flex; gap: 1rem;">
-			    <button data-sky-dialog-close="dashboard">Close</button>
+			    <button data-sky-close="dashboard">Close</button>
 		    </div>
 		</div>
 		<div>
@@ -590,19 +578,19 @@ function renderDashboardDialog(collections) {
 
 function renderComponentsDialog(collections) {
 	return `
-		<button data-sky-dialog-close="components">Close</button>
+		<button data-sky-close="components">Close</button>
 	`;
 }
 
 function renderEditDialog(editable) {
 	return `
-		<button data-sky-dialog-close="edit">Cancel</button>
+		<button data-sky-close="edit">Cancel</button>
 	`;
 }
 
 function renderCollectionsDialog(collections) {
 	return `
-		<button data-sky-dialog-close="collections">Close</button>
+		<button data-sky-close="collections">Close</button>
 		<button onclick="document.querySelector('#form-container').style.display = 'block';">Create Collection</button>
 		<div id="form-container" style="display:none;">
 			<form
@@ -981,31 +969,6 @@ function applyMarkdown(action) {
         selection.removeAllRanges();
         selection.addRange(range);
     }
-    // const editor = document.getElementById('editor');
-    // const { value, selectionStart, selectionEnd } = editor;
-    // let markdownSymbol;
-
-    // switch (action) {
-    //     case 'bold':
-    //         markdownSymbol = '**';
-    //         break;
-    //     case 'italic':
-    //         markdownSymbol = '*';
-    //         break;
-    //     default:
-    //         markdownSymbol = '';
-    // }
-
-    // if (!markdownSymbol) return;
-
-    // const beforeText = value.substring(0, selectionStart);
-    // const selectedText = value.substring(selectionStart, selectionEnd);
-    // const afterText = value.substring(selectionEnd);
-
-    // editor.value = beforeText + markdownSymbol + selectedText + markdownSymbol + afterText;
-
-    // // Set new cursor position
-    // editor.selectionStart = editor.selectionEnd = selectionEnd + 2 * markdownSymbol.length;
 }
 
 
@@ -1047,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', (event) => {
-		// WWWORKING
+
 		if (event.target.matches('button[data-sky-mark]')) {
 			event.preventDefault();
 	        const action = event.target.getAttribute('data-sky-mark');
@@ -1061,13 +1024,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 		// DIALOGS (OPEN)
-        if (event.target.matches('#dashboardButton')) {
+        if (event.target.matches('[data-sky-open="dashboard"]')) {
         	dashboardDialog.show();
         	const body = renderDashboardDialog();
 			dashboardDialog.innerHTML = body;
         }
 
-		if (event.target.matches('#collectionsButton')) {
+		if (event.target.matches('[data-sky-open="collections"]')) {
 			// DATA
 			const collections = readCollections();
 
@@ -1077,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			collectionsDialog.innerHTML = body;
 		}
 
-		if (event.target.matches('#mediaButton')) {
+		if (event.target.matches('[data-sky-open="media"]')) {
 			// DATA
 			const media = readMedia();
 
@@ -1108,23 +1071,23 @@ document.addEventListener('DOMContentLoaded', () => {
 		    loadMediaPreviews();
  		}
 		// DIALOGS (CLOSE)
-		if (event.target.matches('[data-sky-dialog-close="dashboard"]')) {
+		if (event.target.matches('[data-sky-close="dashboard"]')) {
 			dashboardDialog.close();
 		}
 
-		if (event.target.matches('[data-sky-dialog-close="collections"]')) {
+		if (event.target.matches('[data-sky-close="collections"]')) {
 			collectionsDialog.close();
 		}
 
-		if (event.target.matches('[data-sky-dialog-close="media"]')) {
+		if (event.target.matches('[data-sky-close="media"]')) {
 			mediaDialog.close();
 		}
 
-		if (event.target.matches('[data-sky-dialog-close="components"]')) {
+		if (event.target.matches('[data-sky-close="components"]')) {
 			componentsDialog.close();
 		}
 
-		if (event.target.matches('[data-sky-dialog-close="edit"]')) {
+		if (event.target.matches('[data-sky-close="edit"]')) {
 			editDialog.close();
 		}
 
