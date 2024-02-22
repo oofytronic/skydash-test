@@ -377,16 +377,26 @@ function editEditable(wrapper, button, skyKey) {
 
     		editDialog.innerHTML += `
     		<form id="editForm" data-sky-index="${index}">
-    		<div id="markdown-editor">
-			  <textarea id="editor" rows="10" cols="50">${editable.innerText || editable.textContent}</textarea>
-			  <div>
-			    <button type="button" data-sky-mark="bold">Bold</button>
-			  </div>
-			  <pre id="preview"></pre>
+    		<div id="toolbar">
+			    <button data-sky-mark="bold">Bold</button>
+			    <button data-sky-mark="italicize">Italic</button>
 			</div>
-    		<button type="submit" data-sky-index="${index}">Save</button>
-    		</form>
+			<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerText || editable.textContent}</div>
+			<button type="submit" data-sky-index="${index}">Save</button>
+			</form>
     		`;
+    		// editDialog.innerHTML += `
+    		// <form id="editForm" data-sky-index="${index}">
+    		// <div id="markdown-editor">
+			//   <textarea id="editor" rows="10" cols="50">${editable.innerText || editable.textContent}</textarea>
+			//   <div>
+			//     <button type="button" data-sky-mark="bold">Bold</button>
+			//   </div>
+			//   <pre id="preview"></pre>
+			// </div>
+    		// <button type="submit" data-sky-index="${index}">Save</button>
+    		// </form>
+    		// `;
     }
 
     if (type === "image") {
@@ -958,31 +968,44 @@ function deleteInstance(collectionId, instanceId) {
 
 
 function applyMarkdown(action) {
-    const editor = document.getElementById('editor');
-    const { value, selectionStart, selectionEnd } = editor;
-    let markdownSymbol;
-
-    switch (action) {
-        case 'bold':
-            markdownSymbol = '**';
-            break;
-        case 'italic':
-            markdownSymbol = '*';
-            break;
-        default:
-            markdownSymbol = '';
+	const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+    let range = selection.getRangeAt(0);
+    if (range && !selection.isCollapsed) {
+        const span = document.createElement('span');
+        if (action === "bold") {
+        	span.style["fontWeight"] = 'bold';
+        }
+        //span.style[action] = action === 'fontWeight' ? 'bold' : 'italic'; // Adjust based on the style being applied
+        range.surroundContents(span);
+        selection.removeAllRanges();
+        selection.addRange(range);
     }
+    // const editor = document.getElementById('editor');
+    // const { value, selectionStart, selectionEnd } = editor;
+    // let markdownSymbol;
 
-    if (!markdownSymbol) return;
+    // switch (action) {
+    //     case 'bold':
+    //         markdownSymbol = '**';
+    //         break;
+    //     case 'italic':
+    //         markdownSymbol = '*';
+    //         break;
+    //     default:
+    //         markdownSymbol = '';
+    // }
 
-    const beforeText = value.substring(0, selectionStart);
-    const selectedText = value.substring(selectionStart, selectionEnd);
-    const afterText = value.substring(selectionEnd);
+    // if (!markdownSymbol) return;
 
-    editor.value = beforeText + markdownSymbol + selectedText + markdownSymbol + afterText;
+    // const beforeText = value.substring(0, selectionStart);
+    // const selectedText = value.substring(selectionStart, selectionEnd);
+    // const afterText = value.substring(selectionEnd);
 
-    // Set new cursor position
-    editor.selectionStart = editor.selectionEnd = selectionEnd + 2 * markdownSymbol.length;
+    // editor.value = beforeText + markdownSymbol + selectedText + markdownSymbol + afterText;
+
+    // // Set new cursor position
+    // editor.selectionStart = editor.selectionEnd = selectionEnd + 2 * markdownSymbol.length;
 }
 
 
@@ -1026,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	document.body.addEventListener('click', (event) => {
 		// WWWORKING
 		if (event.target.matches('button[data-sky-mark]')) {
+			event.preventDefault();
 	        const action = event.target.getAttribute('data-sky-mark');
 	        applyMarkdown(action);
 	    }
