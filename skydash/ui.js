@@ -1,6 +1,6 @@
 import {capitalize, truncateString} from './utilities.js';
 
-// SKYDASH UI (GOOD)
+// SKYDASH UI
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
@@ -238,7 +238,7 @@ function openMediaLibrary(callback) {
 
 function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
   oldImageElement.src = newImageSrc; // Swap the src attribute of the original image
-  updateEditableStorage(index, skyKey, wrapper.outerHTML);
+  updateEditable(index, skyKey, wrapper.outerHTML);
 }
 
 function loadMediaPreviews() {
@@ -728,55 +728,68 @@ async function openDB() {
       if (!db.objectStoreNames.contains("collections")) {
         db.createObjectStore("collections", { keyPath: "id" });
       }
-      if (!db.objectStoreNames.contains("instances")) {
-        db.createObjectStore("instances", { keyPath: "id" });
+
+      if (!db.objectStoreNames.contains("mediaLibrary")) {
+        db.createObjectStore("mediaLibrary", { keyPath: "id" });
       }
-      // Define other object stores here
+
+      if (!db.objectStoreNames.contains("editables")) {
+        db.createObjectStore("editables", { keyPath: "id" });
+      }
     };
   });
 }
 
-function readEditables(skyKey) {
-	let editableContent = {};
+async function readEditables(skyKey) {
+    const db = await openDB();
+    const tx = db.transaction("editables", "readonly");
+    const store = tx.objectStore("editables");
+    const request = store.get(skyKey);
 
-    if (localStorage.getItem(skyKey)) {
-        editableContent = JSON.parse(localStorage.getItem(skyKey));
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+            const result = request.result;
+            resolve(result ? result.content : {});
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function updateEditable(skyKey, index, newContent) {
+    const db = await openDB();
+    const tx = db.transaction("editables", "readwrite");
+    const store = tx.objectStore("editables");
+
+    let editableContent = await store.get(skyKey);
+    if (!editableContent) {
+        editableContent = { id: skyKey, content: {} };
     }
 
-    return editableContent;
+    editableContent.content[index] = newContent;
+    const request = store.put(editableContent);
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
-function updateEditable(skyKey, index, newContent) {
-    const editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
-    editableContent[index] = newContent;
-    localStorage.setItem(skyKey, JSON.stringify(editableContent));
+// Collections
+async function createCollection(collection) {
+  const db = await openDB();
+  const tx = db.transaction("collections", "readwrite");
+  const store = tx.objectStore("collections");
+  const request = store.add(collection);
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
 }
-
-function updateEditableStorage(index, skyKey, newContent) {
-    const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
-    storedEditables[index] = newContent; // Update or add the new content by index
-    localStorage.setItem(skyKey, JSON.stringify(storedEditables)); // Save back to localStorage
-}
-
-// function readCollections() {
-//     // Attempt to retrieve the collections object from localStorage
-//     const collectionsJSON = localStorage.getItem('collections');
-
-//     // Check if the collections object exists in localStorage
-//     if (collectionsJSON) {
-//         try {
-//             // Parse the JSON string back into an object and return it
-//             return JSON.parse(collectionsJSON);
-//         } catch (e) {
-//             console.error('Error parsing collections from localStorage:', e);
-//             // Return a default value in case of error
-//             return {};
-//         }
-//     } else {
-//         // Return a default value if the collections object doesn't exist in localStorage
-//         return {};
-//     }
-// }
 
 async function readCollections() {
   const db = await openDB();
@@ -794,143 +807,150 @@ async function readCollections() {
   });
 }
 
-
 async function readCollection(collectionId) {
-	const collections = await readCollections();
-	const collection = collections.find(c => c.id === collectionId);
-	return collection;
+    const db = await openDB();
+    const tx = db.transaction("collections", "readonly");
+    const store = tx.objectStore("collections");
+    const request = store.get(collectionId);
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
-// function createCollection(newCollection) {
-// 	// Retrieve existing collections from localStorage or initialize to an empty object/array
-// 	let collections = JSON.parse(localStorage.getItem('collections')) || [];
+async function updateCollection(collectionId, updateCallback) {
+    const db = await openDB(); // Open the database
+    const tx = db.transaction("collections", "readwrite"); // Open a read-write transaction
+    const store = tx.objectStore("collections");
+    const request = store.get(collectionId);
 
-// 	// Add the new collection
-// 	collections.push(newCollection);
+    request.onsuccess = async () => {
+        let collection = request.result;
+        if (!collection) {
+            console.error('Collection not found');
+            return;
+        }
 
-// 	// Save the updated collections back to localStorage
-// 	localStorage.setItem('collections', JSON.stringify(collections));
+        // Perform the update operation provided by the callback
+        // The callback is expected to modify the collection object directly
+        updateCallback(collection);
 
-// 	// Optionally, refresh the collections display or close the dialog
-// }
-
-async function createCollection(collection) {
-  const db = await openDB();
-  const tx = db.transaction("collections", "readwrite");
-  const store = tx.objectStore("collections");
-  const request = store.add(collection);
-
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      resolve(request.result);
+        // Put the updated collection back into the store
+        const updateRequest = store.put(collection);
+        updateRequest.onsuccess = () => {
+            console.log('Collection updated successfully');
+        };
+        updateRequest.onerror = () => {
+            console.error('Failed to update collection');
+        };
     };
-    request.onerror = (event) => {
-      reject(event.target.error);
+    request.onerror = () => {
+        console.error('Failed to retrieve collection');
     };
-  });
-}
 
-function updateCollection() {
-	// Update Fields (*optional* fields only)
+    // Wait for the transaction to complete
+    await tx.done;
 }
 
 async function deleteCollection(collectionId) {
-	const collections = await readCollections();
-    const newCollections = collections.filter(c => c.id !== collectionId);
-    localStorage.setItem('collections', JSON.stringify(newCollections));
+    const db = await openDB();
+    const tx = db.transaction("collections", "readwrite");
+    const store = tx.objectStore("collections");
+    const request = store.delete(collectionId);
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+// Instances
+async function createInstance(collectionId, newInstance) {
+    updateCollection(collectionId, (collection) => {
+        // Add the new instance to the collection's instances array
+        collection.instances.push(newInstance);
+    }).then(() => {
+        console.log('Instance created successfully');
+    }).catch((error) => {
+        console.error('Error creating instance:', error);
+    });
 }
 
 async function readInstances(collectionId) {
-	const collections = await readCollections();
-	const collection = collections.find(c => c.id === collectionId);
-	const instances = collection.instances;
-	return instances;
+    const collection = await readCollection(collectionId);
+    return collection ? collection.instances : [];
 }
 
 async function readInstance(collectionId, instanceId) {
-	const collections = await readCollections();
-	const instances = readInstances(collectionId);
-	const instance = instances.find(i => i.id === instanceId);
-	return instance;
+    const db = await openDB(); // Assuming openDB() is a function that opens your IndexedDB database
+    const tx = db.transaction("collections", "readonly");
+    const store = tx.objectStore("collections");
+    const request = store.get(collectionId);
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+            const collection = request.result;
+            if (!collection) {
+                resolve(undefined);
+                return;
+            }
+            const instance = collection.instances.find(instance => instance.id === instanceId);
+            resolve(instance);
+        };
+        request.onerror = () => reject(request.error);
+    });
 }
 
-async function createInstance(collectionId, newInstance) {
-    // Retrieve existing collections from localStorage
-    const collections = await readCollections();
-    
-    // Find the collection by ID
-    const collectionIndex = collections.findIndex(c => c.id === collectionId);
-    if (collectionIndex === -1) {
-        console.error('Collection not found');
-        return;
-    }
+async function updateInstance(updatedData, collectionId, instanceId) {
+    updateCollection(collectionId, (collection) => {
+        // Find the instance index in the collection
+        const index = collection.instances.findIndex(instance => instance.id === instanceId);
+        if (index === -1) {
+            console.error('Instance not found');
+            return;
+        }
 
-    collections[collectionIndex].instances.push(newInstance);
-
-    // Save the updated collections array back to localStorage
-    localStorage.setItem('collections', JSON.stringify(collections));
-}
-
-async function updateInstance(newInstance, currentInstance, collectionId) {
-	const updatedInstance = {...currentInstance, ...newInstance};
-    
-    let collections = await readCollections();
-
-    const collectionIndex = collections.findIndex(collection => collection.id === collectionId);
-    if (collectionIndex === -1) {
-        console.error('Collection not found');
-        return;
-    }
-
-    const instanceIndex = collections[collectionIndex].instances.findIndex(instance => instance.id === currentInstance.id);
-    if (instanceIndex === -1) {
-        console.error('Instance not found');
-        return;
-    }
-
-    collections[collectionIndex].instances[instanceIndex] = updatedInstance;
-
-    // Save the updated collections back to localStorage
-    localStorage.setItem('collections', JSON.stringify(collections));
+        // Update the instance with the new data
+        collection.instances[index] = { ...collection.instances[index], ...updatedData };
+    }).then(() => {
+        console.log('Instance updated successfully');
+    }).catch((error) => {
+        console.error('Error updating instance:', error);
+    });
 }
 
 async function deleteInstance(collectionId, instanceId) {
-    const collections = await readCollections();
-    
-    // Find the collection by ID
-    const collectionIndex = collections.findIndex(c => c.id === collectionId);
-    if (collectionIndex === -1) {
-        console.error('Collection not found');
-        return;
-    }
-
-    // Filter out the instance to delete
-    const filteredInstances = collections[collectionIndex].instances.filter(instance => instance.id !== instanceId);
-
-    // Reassign the filtered instances back to the collection
-    collections[collectionIndex].instances = filteredInstances;
-
-    // Save the updated collections back to localStorage
-    localStorage.setItem('collections', JSON.stringify(collections));
+    updateCollection(collectionId, (collection) => {
+        // Filter out the instance to be deleted
+        const filteredInstances = collection.instances.filter(instance => instance.id !== instanceId);
+        // Reassign the filtered instances back to the collection
+        collection.instances = filteredInstances;
+    }).then(() => {
+        console.log('Instance deleted successfully');
+    }).catch((error) => {
+        console.error('Error deleting instance:', error);
+    });
 }
 
-function addMedia(imageSrc) {
-    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
-    mediaLibrary.push({ url: imageSrc });
-    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+// Media
+async function addMedia(imageSrc) {
+    // Assuming a structure where each media item is a separate entry in the store
+    const db = await openDB();
+    const tx = db.transaction("mediaLibrary", "readwrite");
+    const store = tx.objectStore("mediaLibrary");
+    const request = store.add({ url: imageSrc, id: Date.now().toString() });
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
-// INCOMPLETE
-function deleteMedia(imageSrc) {
-	 // Filter out the instance to delete
-    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary'));
+// deleteMedia
 
-    mediaLibrary
 
-    // Save the updated collections back to localStorage
-    localStorage.setItem('collections', JSON.stringify(collections));
-}
-
+// MISC
 function applyMarkdown(action) {
 	const selection = window.getSelection();
     if (!selection.rangeCount) return false;
@@ -1070,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (event.target.matches('.delete-collection-button')) {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
-			deleteCollection(collectionId);
+			await deleteCollection(collectionId);
 			const collections = await readCollections();
 
 			// VIEW
@@ -1112,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (event.target.matches('.create-instance-button')) {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
-			const collection = readCollection(collectionId);
+			const collection = await readCollection(collectionId);
 
 			// VIEW
 			const body = renderNewInstanceForm(collection);
@@ -1122,8 +1142,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (event.target.matches('.instance-view-button')) {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
-			const collection = readCollection(collectionId);
-			const instances = readInstances(collectionId);
+			const collection = await readCollection(collectionId);
+			const instances = await readInstances(collectionId);
 
 			// VIEW
 			const body = renderInstances(collection, instances);
@@ -1134,8 +1154,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
-			const collection = readCollection(collectionId);
-			const instance = readInstance(collectionId, instanceId);
+			const collection = await readCollection(collectionId);
+			const instance = await readInstance(collectionId, instanceId);
 
 			// VIEW
 			const body = renderInstanceEditForm(collection, instance);
@@ -1146,9 +1166,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			// DATA
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
-			deleteInstance(collectionId, instanceId);
-			const collection = readCollection(collectionId);
-			const instances = readInstances(collectionId);
+			await deleteInstance(collectionId, instanceId);
+			const collection = await readCollection(collectionId);
+			const instances = await readInstances(collectionId);
 
 			// VIEW
 			const body = renderInstances(collection, instances);
@@ -1233,9 +1253,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			const newInstanceObj = genNewInstanceObject(tempData);
 			const instance = {...newInstanceObj, ...tempData}
 
-			createInstance(collectionId, instance);
-			const collection = readCollection(collectionId);
-			const instances = readInstances(collectionId);
+			await createInstance(collectionId, instance);
+			const collection = await readCollection(collectionId);
+			const instances = await readInstances(collectionId);
 
 			// VIEW
 			const body = renderInstances(collection, instances);
@@ -1249,11 +1269,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
 			
-			const instance = readInstance(collectionId, instanceId);
+			const instance = await readInstance(collectionId, instanceId);
 
-			updateInstance(tempData, instance, collectionId);
-			const collection = readCollection(collectionId);
-			const instances = readInstances(collectionId);
+			await updateInstance(tempData, collectionId, instance.id);
+			const collection = await readCollection(collectionId);
+			const instances = await readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
 			collectionsDialog.innerHTML = body;
