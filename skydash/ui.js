@@ -8,7 +8,7 @@ function createSkyDashUI() {
 		<button data-sky-open="dashboard">Dashboard</button>
 		<button data-sky-open="collections">Collections</button>
 		<button data-sky-open="media">Media Library</button>
-		<div style="width: 30px; height: 30px; border-radius: 50%; background: black;"></div>
+		<div style="width: 30px; height: 30px; border-radius: 50%; background: gray;"></div>
 	</div>
 
 	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
