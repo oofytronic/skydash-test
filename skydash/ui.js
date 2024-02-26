@@ -216,6 +216,13 @@ function openMediaLibrary(callback) {
 	mediaDialog.innerHTML = body;
 	loadMediaPreviews();
 
+	// Handle selection of an image
+  function handleMediaSelection(event) {
+    const selectedImageSrc = event.target.src; // Get the src of the selected image
+    callback(selectedImageSrc); // Pass the selected image src back to the callback
+    document.getElementById('mediaDialog').close(); // Close the media library dialog
+  }
+
   // Remove any previous click event listeners to prevent multiple assignments
   const mediaGallery = document.getElementById('mediaGallery');
   const existingImages = mediaGallery.querySelectorAll('img');
@@ -227,13 +234,6 @@ function openMediaLibrary(callback) {
   existingImages.forEach(img => {
     img.addEventListener('click', handleMediaSelection);
   });
-
-  // Handle selection of an image
-  function handleMediaSelection(event) {
-    const selectedImageSrc = event.target.src; // Get the src of the selected image
-    callback(selectedImageSrc); // Pass the selected image src back to the callback
-    document.getElementById('mediaDialog').close(); // Close the media library dialog
-  }
 }
 
 function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
@@ -242,7 +242,7 @@ function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
 }
 
 function loadMediaPreviews() {
-    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
+    const mediaLibrary = readAllMedia();
     const mediaGallery = document.getElementById('mediaGallery');
     mediaGallery.innerHTML = '';
     mediaLibrary.forEach((media, index) => {
@@ -947,7 +947,37 @@ async function addMedia(imageSrc) {
     });
 }
 
-// deleteMedia
+async function readAllMedia() {
+    const db = await openDB(); // Assuming openDB() opens your IndexedDB database
+    const tx = db.transaction('mediaLibrary', 'readonly');
+    const store = tx.objectStore('mediaLibrary');
+    const allMediaItems = await store.getAll();
+    db.close();
+    return allMediaItems; // This will return an array of all media item objects
+}
+
+
+async function readMedia(mediaId) {
+    const db = await openDB(); // Assuming openDB() opens your IndexedDB database
+    const tx = db.transaction('mediaLibrary', 'readonly');
+    const store = tx.objectStore('mediaLibrary');
+    const mediaItem = await store.get(mediaId);
+    db.close();
+    return mediaItem; // This will return the media item object; adjust as necessary for your application
+}
+
+
+async function deleteMedia(imageSrc) {
+    const db = await openDB(); // Open your IndexedDB database
+    const tx = db.transaction('mediaLibrary', 'readwrite');
+    const store = tx.objectStore('mediaLibrary');
+    // Assuming imageSrc is unique and used as a key or you have an index set up for it
+    await store.delete(imageSrc);
+    await tx.complete;
+    console.log('Media deleted successfully');
+    db.close();
+}
+
 
 
 // MISC
