@@ -160,16 +160,15 @@ function injectSkyDashStyles() {
 }
 
 // EDITABLE CONTENT
-function openFieldEditor(field) {
+async function openFieldEditor(field) {
+    function activateFieldInDialog(fieldName) {
+        const input = document.querySelector(`[name="${fieldName}"]`);
+        if (input) {
+            input.focus();
+        }
+    }
 
-	function activateFieldInDialog(fieldName) {
-	    const input = document.querySelector(`[name="${fieldName}"]`);
-	    if (input) {
-	        input.focus();
-	    }
-	}
-
-	const fieldValue = field.getAttribute('data-sky-field');
+    const fieldValue = field.getAttribute('data-sky-field');
 
     // Step 1: Parse the data-sky-field value
     const parts = fieldValue.split('.');
@@ -179,26 +178,31 @@ function openFieldEditor(field) {
     }
     const [collectionName, instanceId, fieldName] = parts;
 
-    const collections = JSON.parse(localStorage.getItem('collections')) || {};
-    const collection = collections.find(collection => collection.pluralId === collectionName);
-    if (!collection) {
-        console.error('Collection not found');
-        return;
+    try {
+        const collections = await readCollections();
+        const collection = collections.find(collection => collection.pluralId === collectionName);
+        if (!collection) {
+            console.error('Collection not found');
+            return;
+        }
+
+        const instance = collection.instances.find(instance => instance.id === instanceId);
+        if (!instance) {
+            console.error('Instance not found');
+            return;
+        }
+
+        const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
+        const body = renderInstanceEditForm(collection, instance);
+        collectionsDialog.innerHTML = body;
+        collectionsDialog.show();
+
+        activateFieldInDialog(fieldName);
+    } catch (error) {
+        console.error('Error opening field editor:', error);
     }
-
-    const instance = collection.instances.find(instance => instance.id === instanceId);
-    if (!instance) {
-        console.error('Instance not found');
-        return;
-    }
-
-    const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
-	const body = renderInstanceEditForm(collection, instance);
-	collectionsDialog.innerHTML = body;
-	collectionsDialog.show();
-
-    activateFieldInDialog(fieldName);
 }
+
 
 function openComponentEditor(component) {
 	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
