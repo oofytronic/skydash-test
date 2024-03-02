@@ -743,6 +743,44 @@ async function openDB() {
   });
 }
 
+//WWWORKING
+async function initializeEditables(skyKey) {
+    if (!skyKey) return;
+
+    let editableContent = await readEditables(skyKey);
+
+    if (Object.keys(editableContent).length === 0) {
+        // If no editable content is found for the skyKey, gather and store initial content
+        const initialContent = getEditablesFromPage(skyKey);
+        await updateEditable(skyKey, initialContent);
+        editableContent = await readEditables(skyKey); // Re-read to confirm storage
+    }
+
+    // Use editableContent to update the page
+    updatePageWithEditables(editableContent);
+}
+
+function getEditablesFromPage(skyKey) {
+    const editables = document.querySelectorAll('[data-sky-element]');
+
+    const content = {};
+
+    editables.forEach((editable, index) => {
+        content[index] = editable.outerHTML; // Or any other relevant property
+    });
+
+    return { id: skyKey, content };
+}
+
+function updatePageWithEditables(editableContent) {
+    Object.entries(editableContent.content || {}).forEach(([index, html]) => {
+        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
+        if (editableElement) {
+            editableElement.innerHTML = html; // Or update appropriately based on your structure
+        }
+    });
+}
+
 async function readEditables(skyKey) {
     const db = await openDB();
     const tx = db.transaction("editables", "readonly");
@@ -1010,11 +1048,9 @@ function applyMarkdown(action) {
 
 
 // EVENT LISTENERS
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 	createSkyDashUI();
 	injectSkyDashStyles();
-
-	openDB();
 
 	// SKY ELEMENTS
 	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
@@ -1026,17 +1062,13 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editableElements = document.querySelectorAll('[data-sky-element]');
 	const editableFields = document.querySelectorAll('[data-sky-field]');
 	const editableComponents = document.querySelectorAll('[data-sky-component]');
-	const storedEditables = JSON.parse(localStorage.getItem(skyKey)) || {};
+
+	await openDB()
+	.then(initializeEditables(skyKey))
+	.catch(error => console.error('Error initializing IndexedDB:', error));
 
     editableElements.forEach((element, index) => {
-        const storedHtml = storedEditables[index];
-        if (storedHtml) {
-            // Apply stored edits
-            element.outerHTML = storedHtml;
-        }
-        // Re-query the element in case it was replaced by storedHtml
-        const updatedElement = document.querySelectorAll('[data-sky-element]')[index];
-        wrapEditableElement(updatedElement, index);
+        wrapEditableElement(element, index);
     });
 
     editableFields.forEach((element, index) => {
@@ -1317,36 +1349,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		// EDIT PAGE
 		if (event.target.matches('#editForm')) {
-			event.preventDefault();
+	        event.preventDefault();
 
-			const editDialog = document.getElementById('editDialog');
-		    const skyKey = editDialog.getAttribute('data-sky-key');
-		    const index = event.target.getAttribute('data-sky-index');
+	        const editDialog = document.getElementById('editDialog');
+	        const skyKey = editDialog.getAttribute('data-sky-key');
+	        const index = event.target.getAttribute('data-sky-index');
 
-		    const formData = new FormData(event.target);
-			const tempData = {};
-			tempData.newId = Date.now().toString();
+	        const formData = new FormData(event.target);
+	        const newContent = formData.get('newEditable');
 
-			for (let [key, value] of formData.entries()) {
-				tempData[key] = value;
-			}
+	        // Retrieve the editable content object and update the specific item
+	        let editableContent = await readEditables(skyKey);
+	        editableContent = editableContent || {}; // Ensure editableContent is an object if undefined
+	        editableContent.content = editableContent.content || {}; // Ensure content property exists
+	        editableContent.content[index] = newContent;
 
-		    const newContent = tempData.newEditable;
+	        await updateEditable(skyKey, editableContent.content);
 
-			// Retrieve the editable content object and update the specific item
-			let editableContent = JSON.parse(localStorage.getItem(skyKey)) || {};
-			editableContent[index] = newContent;
-			localStorage.setItem(skyKey, JSON.stringify(editableContent));
+	        // Update the content on the page directly, if necessary
+	        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
+	        if (editableElement) {
+	            const contentElement = editableElement.querySelector('[data-sky-element]');
+	            if (contentElement) {
+	                contentElement.innerHTML = newContent;
+	            }
+	        }
 
-			// Update the content on the page
-			const editableElements = document.querySelectorAll('[data-sky-element]');
-			if (editableElements[index]) {
-			    editableElements[index].innerHTML = newContent;
-			}
-
-			// Close the dialog
-			document.getElementById('editDialog').close();
-		}
+	        // Close the dialog
+	        document.getElementById('editDialog').close();
+	    }
 	});
 
 	// EVENTS (CHANGE)
