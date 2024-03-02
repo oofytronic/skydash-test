@@ -4,7 +4,6 @@ import {capitalize, truncateString} from './utilities.js';
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
-		
 		<button data-sky-open="dashboard">Dashboard</button>
 		<button data-sky-open="collections">Collections</button>
 		<button data-sky-open="media">Media Library</button>
@@ -208,13 +207,13 @@ function openComponentEditor(component) {
 	componentsDialog.show();
 }
 
-function openMediaLibrary(callback) {
+async function openMediaLibrary(callback) {
 	// Open the media library dialog
 	const mediaDialog = document.getElementById('mediaDialog')
 	mediaDialog.show();
 	const body = renderMediaDialog();
 	mediaDialog.innerHTML = body;
-	loadMediaPreviews();
+	await loadMediaPreviews();
 
 	// Handle selection of an image
   function handleMediaSelection(event) {
@@ -241,14 +240,14 @@ function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
   updateEditable(index, skyKey, wrapper.outerHTML);
 }
 
-function loadMediaPreviews() {
-    const mediaLibrary = readAllMedia();
+async function loadMediaPreviews() {
+    const mediaLibrary = await readAllMedia();
     const mediaGallery = document.getElementById('mediaGallery');
     mediaGallery.innerHTML = '';
     mediaLibrary.forEach((media, index) => {
         const imageElement = `
         <div style="display: flex; flex-direction: column; border: 1px solid black; width: fit-content; height: fit-content;">
-        	<img src="${media.url}" alt="Image ${index}" data-media-index="${index}" style="width: 100px; margin: 5px;">
+        	<img src="${media.url}" alt="Image ${index}" data-media-index="${index}" data-media-id="${media.id}" style="width: 100px; margin: 5px;">
         	<button class="delete-media-button">Delete</button>
         </div>
         `;
@@ -256,12 +255,12 @@ function loadMediaPreviews() {
     });
 }
 
-function readAndPreviewImage(file) {
+async function readAndPreviewImage(file) {
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = async function(event) {
         const imageSrc = event.target.result;
         addMedia(imageSrc);
-        loadMediaPreviews();
+        await loadMediaPreviews();
     };
     reader.readAsDataURL(file);
 }
@@ -948,12 +947,19 @@ async function addMedia(imageSrc) {
 }
 
 async function readAllMedia() {
-    const db = await openDB(); // Assuming openDB() opens your IndexedDB database
+    const db = await openDB();
     const tx = db.transaction('mediaLibrary', 'readonly');
     const store = tx.objectStore('mediaLibrary');
-    const allMediaItems = await store.getAll();
-    db.close();
-    return allMediaItems; // This will return an array of all media item objects
+    const request = store.getAll();
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => {
+            resolve(request.result); // This resolves with the actual array of media items
+        };
+        request.onerror = () => {
+            reject(request.error);
+        };
+    });
 }
 
 
@@ -967,15 +973,16 @@ async function readMedia(mediaId) {
 }
 
 
-async function deleteMedia(imageSrc) {
-    const db = await openDB(); // Open your IndexedDB database
+async function deleteMedia(mediaId) {
+    const db = await openDB();
     const tx = db.transaction('mediaLibrary', 'readwrite');
     const store = tx.objectStore('mediaLibrary');
-    // Assuming imageSrc is unique and used as a key or you have an index set up for it
-    await store.delete(imageSrc);
-    await tx.complete;
-    console.log('Media deleted successfully');
-    db.close();
+    const request = store.delete(mediaId);
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve();
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
 
@@ -1076,24 +1083,19 @@ document.addEventListener('DOMContentLoaded', () => {
 			const body = renderMediaDialog();
 			mediaDialog.innerHTML = body;
 
-			loadMediaPreviews();
+			await loadMediaPreviews();
 		}
 
 		if (event.target.matches('.delete-media-button')) {
-		    // Get the index of the media item to delete
-		    const index = parseInt(event.target.getAttribute('data-media-index'), 10);
+		    const mediaWrapper = event.target.closest('div'); // Assuming each image and button are wrapped in a div
+	        const imageElement = mediaWrapper.querySelector('img'); // Find the img element within the same wrapper
+	        const mediaId = imageElement.dataset.mediaId;
+		    console.log(mediaId)
 
-		    // Retrieve the current media library from localStorage
-		    const mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary')) || [];
-
-		    // Remove the selected media item
-		    mediaLibrary.splice(index, 1);
-
-		    // Save the updated media library back to localStorage
-		    localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+		    await deleteMedia(mediaId);
 
 		    // Update the preview
-		    loadMediaPreviews();
+		   await loadMediaPreviews();
  		}
 		// DIALOGS (CLOSE)
 		if (event.target.matches('[data-sky-close="dashboard"]')) {
