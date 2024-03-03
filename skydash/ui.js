@@ -1,5 +1,22 @@
 import {capitalize, truncateString} from './utilities.js';
 
+// MISC
+function applyMarkdown(action) {
+	const selection = window.getSelection();
+    if (!selection.rangeCount) return false;
+    let range = selection.getRangeAt(0);
+    if (range && !selection.isCollapsed) {
+        const span = document.createElement('span');
+        if (action === "bold") {
+        	span.style["fontWeight"] = 'bold';
+        }
+        //span.style[action] = action === 'fontWeight' ? 'bold' : 'italic'; // Adjust based on the style being applied
+        range.surroundContents(span);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
 // SKYDASH UI
 function createSkyDashUI() {
 	const skyHTML = `
@@ -749,19 +766,18 @@ async function initializeEditables(skyKey) {
     let editableContent = await readEditables(skyKey);
 
     if (Object.keys(editableContent).length === 0) {
-        // If no editable content is found for the skyKey, gather and store initial content
-        const initialContent = getEditablesFromPage(skyKey);
-        console.log(initialContent)
+        // If no editable content is found for the skyKey, gather initial content
+        const initialContent = getEditablesFromPage();
+        console.log("Initial content:", initialContent);
 
-        for (const [key, value] of Object.entries(initialContent.content)) {
-        	await updateEditable(skyKey, key, value);
-        }
+        // Create a new entry in IndexedDB for this skyKey
+        await createEditables(skyKey, initialContent);
 
-        editableContent = await readEditables(skyKey);
+        editableContent = initialContent;
     }
 
     // Use editableContent to update the page
-    updatePageWithEditables(editableContent);
+    updatePageWithEditables(skyKey, editableContent);
 }
 
 function getEditablesFromPage(skyKey) {
@@ -770,20 +786,33 @@ function getEditablesFromPage(skyKey) {
     const content = {};
 
     editables.forEach((editable, index) => {
-        content[index] = editable.outerHTML; // Or any other relevant property
+        content[index] = editable.outerHTML;
     });
 
-    return { id: skyKey, content };
+    return content;
 }
 
-function updatePageWithEditables(editableContent) {
-    Object.entries(editableContent.content || {}).forEach(([index, html]) => {
-        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
-        if (editableElement) {
-            editableElement.innerHTML = html; // Or update appropriately based on your structure
-        }
+function updatePageWithEditables(skyKey, editableContent) {
+    // Object.entries(editableContent).forEach(([index, html]) => {
+    //     const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
+    //     if (editableElement) {
+    //         editableElement.innerHTML = html; // Or update appropriately based on your structure
+    //     }
+    // });
+}
+
+async function createEditables(skyKey, content) {
+    const db = await openDB();
+    const tx = db.transaction("editables", "readwrite");
+    const store = tx.objectStore("editables");
+    const request = store.put({ id: skyKey, content });
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
     });
 }
+
 
 async function readEditables(skyKey) {
     const db = await openDB();
@@ -1008,7 +1037,6 @@ async function readAllMedia() {
     });
 }
 
-
 async function readMedia(mediaId) {
     const db = await openDB(); // Assuming openDB() opens your IndexedDB database
     const tx = db.transaction('mediaLibrary', 'readonly');
@@ -1017,7 +1045,6 @@ async function readMedia(mediaId) {
     db.close();
     return mediaItem; // This will return the media item object; adjust as necessary for your application
 }
-
 
 async function deleteMedia(mediaId) {
     const db = await openDB();
@@ -1029,25 +1056,6 @@ async function deleteMedia(mediaId) {
         request.onsuccess = () => resolve();
         request.onerror = (event) => reject(event.target.error);
     });
-}
-
-
-
-// MISC
-function applyMarkdown(action) {
-	const selection = window.getSelection();
-    if (!selection.rangeCount) return false;
-    let range = selection.getRangeAt(0);
-    if (range && !selection.isCollapsed) {
-        const span = document.createElement('span');
-        if (action === "bold") {
-        	span.style["fontWeight"] = 'bold';
-        }
-        //span.style[action] = action === 'fontWeight' ? 'bold' : 'italic'; // Adjust based on the style being applied
-        range.surroundContents(span);
-        selection.removeAllRanges();
-        selection.addRange(range);
-    }
 }
 
 
@@ -1067,11 +1075,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const editableFields = document.querySelectorAll('[data-sky-field]');
 	const editableComponents = document.querySelectorAll('[data-sky-component]');
 
-	await openDB()
-	.then(initializeEditables(skyKey))
-	.catch(error => console.error('Error initializing IndexedDB:', error));
-
-    editableElements.forEach((element, index) => {
+	// PREP ELEMENTS
+	editableElements.forEach((element, index) => {
         wrapEditableElement(element, index);
     });
 
@@ -1081,7 +1086,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     editableComponents.forEach((element, index) => {
     	wrapEditableElement(element, index);
-    })
+    });
+
+	await openDB()
+	.then(initializeEditables(skyKey))
+	.catch(error => console.error('Error initializing IndexedDB:', error));
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
