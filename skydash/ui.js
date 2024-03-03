@@ -203,7 +203,6 @@ async function openFieldEditor(field) {
     }
 }
 
-
 function openComponentEditor(component) {
 	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
 	const body = renderComponentsDialog();
