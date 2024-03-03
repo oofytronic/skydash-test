@@ -241,7 +241,7 @@ async function openMediaLibrary(callback) {
 
 function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
   oldImageElement.src = newImageSrc; // Swap the src attribute of the original image
-  updateEditable(index, skyKey, wrapper.outerHTML);
+  updateEditable(skyKey, index, wrapper.outerHTML);
 }
 
 async function loadMediaPreviews() {
@@ -752,8 +752,13 @@ async function initializeEditables(skyKey) {
     if (Object.keys(editableContent).length === 0) {
         // If no editable content is found for the skyKey, gather and store initial content
         const initialContent = getEditablesFromPage(skyKey);
-        await updateEditable(skyKey, initialContent);
-        editableContent = await readEditables(skyKey); // Re-read to confirm storage
+        console.log(initialContent)
+
+        for (const [key, value] of Object.entries(initialContent.content)) {
+        	await updateEditable(skyKey, key, value);
+        }
+
+        editableContent = await readEditables(skyKey);
     }
 
     // Use editableContent to update the page
@@ -1364,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        editableContent.content = editableContent.content || {}; // Ensure content property exists
 	        editableContent.content[index] = newContent;
 
-	        await updateEditable(skyKey, editableContent.content);
+	        await updateEditable(skyKey, index, editableContent.content);
 
 	        // Update the content on the page directly, if necessary
 	        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
