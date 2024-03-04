@@ -705,10 +705,10 @@ function genNewCollectionObject(data) {
 function genNewEditableObject(data) {
 	return {
 		id: data.newId,
-		name: data.skyKey,
+		skyKey: data.skyKey,
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString(),
-		content: {}
+		html: {}
 	};
 }
 
@@ -773,17 +773,17 @@ async function openDB() {
 async function initializeEditables(skyKey) {
     if (!skyKey) return;
 
-    let editableContent = await readEditables(skyKey);
+    let editableContent = await readEditables(skyKey).content;
 
-    if (Object.keys(editableContent).length === 0) {
+    if (!editableContent) {
         // If no editable content is found for the skyKey, gather initial content
-        const initialContent = getEditablesFromPage();
-        console.log("Initial content:", initialContent);
+        const initialList = getEditablesFromPage(skyKey);
+        console.log("Initial content:", initialList);
 
         // Create a new entry in IndexedDB for this skyKey
-        await createEditables(skyKey, initialContent);
+        await createEditables(skyKey, initialList);
 
-        editableContent = initialContent;
+        editableContent = initialList;
     }
 
     // Use editableContent to update the page
@@ -793,20 +793,27 @@ async function initializeEditables(skyKey) {
 function getEditablesFromPage(skyKey) {
     const editables = document.querySelectorAll('[data-sky-element]');
 
-    const content = {};
+    let list = {}
 
     editables.forEach((editable, index) => {
-        content[index] = editable.outerHTML;
+    	let data = {};
+    	data.newId = Date.now().toString();
+    	data.skyKey = skyKey;
+
+    	let obj = genNewEditableObject(data)
+        obj.html = editable.outerHTML;
+        obj.index = index;
+        list[index] = obj;
     });
 
-    return content;
+    return list;
 }
 
 function updatePageWithEditables(skyKey, editableContent) {
-    Object.entries(editableContent).forEach(([index, html]) => {
+    Object.entries(editableContent).forEach(([index, content]) => {
         const editableElement = document.querySelector(`[data-sky-element][data-sky-index="${index}"]`);
         if (editableElement) {
-            editableElement.innerHTML = html;
+            editableElement.innerHTML = content.html;
         }
     });
 }
@@ -832,7 +839,7 @@ async function readEditables(skyKey) {
     return new Promise((resolve, reject) => {
         request.onsuccess = () => {
             const result = request.result;
-            resolve(result.content);
+            resolve(result);
         };
         request.onerror = () => reject(request.error);
     });
@@ -848,7 +855,7 @@ async function updateEditable(skyKey, index, newContent) {
         const request = store.get(skyKey);
         request.onsuccess = () => {
             // Check if the entry exists, if not, create a new structure
-            resolve(request.result || { id: skyKey, content: {} });
+            resolve(request.result);
         };
         request.onerror = (event) => {
             reject(event.target.error);
@@ -857,7 +864,7 @@ async function updateEditable(skyKey, index, newContent) {
 
     // Now, editableContent is properly awaited and should be an object or a new structure
     // Modify the content
-    editableContent.content[index] = newContent;
+    editableContent.content[index].html = newContent;
 
     // Use a promise to wait for the put operation to complete
     return new Promise((resolve, reject) => {
@@ -1394,11 +1401,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	        // Update the content on the page directly, if necessary
 	        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
-	        console.log(editableElement)
+
 	        if (editableElement) {
 	            const contentElement = editableElement.querySelector('[data-sky-element]');
 	            if (contentElement) {
-	            	console.log('yup')
 	                contentElement.innerHTML = newContent;
 	            }
 	        }
