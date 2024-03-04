@@ -309,11 +309,11 @@ function wrapEditableElement(element, index) {
 
     if (element.getAttribute('data-sky-field')) {
     	wrapper.className = 'editable-wrapper-open';
-    	wrapper.setAttribute('data-sky-index', index);			
+    	// wrapper.setAttribute('data-sky-index', index);
     	toolbarHTML = renderEditableToolbar("field", index);
     } else if (element.getAttribute('data-sky-component')) {
     	wrapper.className = 'editable-wrapper-open';
-    	wrapper.setAttribute('data-sky-index', index);			
+    	// wrapper.setAttribute('data-sky-index', index);
     	toolbarHTML = renderEditableToolbar('component', index);
     } else {
     	wrapper.className = 'editable-wrapper';
@@ -443,11 +443,11 @@ function renderEditableToolbar(editableType, index) {
                 </div>`;
         case 'field':
             return `<div class="sky-edit-toolbar-inside">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="field">Edit Collection Field</button>
+	                <button class="sky-edit-button" data-sky-type="${editableType}" data-sky-action="field">Edit Collection Field</button>
                 </div>`;
         case 'component':
             return `<div class="sky-edit-toolbar-inside">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="component">Edit Component</button>
+	                <button class="sky-edit-button" data-sky-type="${editableType}" data-sky-action="component">Edit Component</button>
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
@@ -722,7 +722,7 @@ function genNewTempFormData(event) {
 	return tempData;
 }
 
-//CACHE LAYER
+// CACHE LAYER
 async function openDB() {
   if (!window.indexedDB) {
     console.error("IndexedDB is not supported by this browser.");
@@ -759,7 +759,7 @@ async function openDB() {
   });
 }
 
-//WWWORKING
+// Editables
 async function initializeEditables(skyKey) {
     if (!skyKey) return;
 
@@ -793,12 +793,12 @@ function getEditablesFromPage(skyKey) {
 }
 
 function updatePageWithEditables(skyKey, editableContent) {
-    // Object.entries(editableContent).forEach(([index, html]) => {
-    //     const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
-    //     if (editableElement) {
-    //         editableElement.innerHTML = html; // Or update appropriately based on your structure
-    //     }
-    // });
+    Object.entries(editableContent).forEach(([index, html]) => {
+        const editableElement = document.querySelector(`[data-sky-element][data-sky-index="${index}"]`);
+        if (editableElement) {
+            editableElement.innerHTML = html;
+        }
+    });
 }
 
 async function createEditables(skyKey, content) {
@@ -812,7 +812,6 @@ async function createEditables(skyKey, content) {
         request.onerror = (event) => reject(event.target.error);
     });
 }
-
 
 async function readEditables(skyKey) {
     const db = await openDB();
@@ -834,17 +833,27 @@ async function updateEditable(skyKey, index, newContent) {
     const tx = db.transaction("editables", "readwrite");
     const store = tx.objectStore("editables");
 
-    let editableContent = await store.get(skyKey);
-    if (!editableContent) {
-        editableContent = { id: skyKey, content: {} };
-    }
+    // Use a promise to wait for the get operation to complete
+    const editableContent = await new Promise((resolve, reject) => {
+        const request = store.get(skyKey);
+        request.onsuccess = () => {
+            // Check if the entry exists, if not, create a new structure
+            resolve(request.result || { id: skyKey, content: {} });
+        };
+        request.onerror = (event) => {
+            reject(event.target.error);
+        };
+    });
 
+    // Now, editableContent is properly awaited and should be an object or a new structure
+    // Modify the content
     editableContent.content[index] = newContent;
-    const request = store.put(editableContent);
 
+    // Use a promise to wait for the put operation to complete
     return new Promise((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (event) => reject(event.target.error);
+        const updateRequest = store.put(editableContent);
+        updateRequest.onsuccess = () => resolve(updateRequest.result);
+        updateRequest.onerror = (event) => reject(event.target.error);
     });
 }
 
@@ -1365,25 +1374,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        event.preventDefault();
 
 	        const editDialog = document.getElementById('editDialog');
-	        const skyKey = editDialog.getAttribute('data-sky-key');
+	        const skyKey = document.body.getAttribute('data-sky-key');
 	        const index = event.target.getAttribute('data-sky-index');
 
 	        const formData = new FormData(event.target);
 	        const newContent = formData.get('newEditable');
 
-	        // Retrieve the editable content object and update the specific item
-	        let editableContent = await readEditables(skyKey);
-	        editableContent = editableContent || {}; // Ensure editableContent is an object if undefined
-	        editableContent.content = editableContent.content || {}; // Ensure content property exists
-	        editableContent.content[index] = newContent;
-
-	        await updateEditable(skyKey, index, editableContent.content);
+	        await updateEditable(skyKey, index, newContent);
 
 	        // Update the content on the page directly, if necessary
 	        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
+	        console.log(editableElement)
 	        if (editableElement) {
 	            const contentElement = editableElement.querySelector('[data-sky-element]');
 	            if (contentElement) {
+	            	console.log('yup')
 	                contentElement.innerHTML = newContent;
 	            }
 	        }
