@@ -702,6 +702,16 @@ function genNewCollectionObject(data) {
 	};
 }
 
+function genNewEditableObject(data) {
+	return {
+		id: data.newId,
+		name: data.skyKey,
+		createdAt: new Date().toISOString(),
+		updatedAt: new Date().toISOString(),
+		content: {}
+	};
+}
+
 function genNewInstanceObject(data) {
 	return {
 		id: data.newId,
@@ -822,7 +832,7 @@ async function readEditables(skyKey) {
     return new Promise((resolve, reject) => {
         request.onsuccess = () => {
             const result = request.result;
-            resolve(result ? result.content : {});
+            resolve(result.content);
         };
         request.onerror = () => reject(request.error);
     });
