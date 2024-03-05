@@ -830,7 +830,8 @@ function getEditablesFromPage(skyKey) {
 
 function updatePageWithEditables(skyKey, editableContent) {
     Object.entries(editableContent).forEach(([index, content]) => {
-        const editableElement = document.querySelector(`[data-sky-element][data-sky-index="${index}"]`);
+        const editableWrapper = document.querySelector(`.editable-wrapper [data-sky-index="${index}"]`);
+        const editableElement = editableWrapper.querySelector('[data-sky-element]');
         if (editableElement) {
             editableElement.innerHTML = content.html;
         }
