@@ -287,6 +287,7 @@ function inferEditableType(tagName) {
 
 function editEditable(wrapper, button, skyKey) {
 	const index = wrapper.getAttribute('data-sky-index');
+	const id = wrapper.getAttribute('data-sky-id');
 	const type = button.getAttribute('data-sky-type');
 	const field = wrapper.querySelector('[data-sky-field]');
     const editable = wrapper.querySelector('[data-sky-element]');
@@ -300,9 +301,9 @@ function editEditable(wrapper, button, skyKey) {
     		editDialog.innerHTML = body;
 
     		editDialog.innerHTML += `
-    		<form id="editForm" data-sky-index="${index}">
+    		<form id="editForm" data-sky-id="${id}">
     		<input name="newEditable" id="newEditable" type="text" value="${editable.innerText || editable.textContent}">
-    		<button type="submit" data-sky-index="${index}">Save</button>
+    		<button type="submit" data-sky-id="${id}">Save</button>
     		</form>
     		`;
     	}
@@ -324,13 +325,13 @@ function editEditable(wrapper, button, skyKey) {
     		editDialog.innerHTML = body;
 
     		editDialog.innerHTML += `
-    		<form id="editForm" data-sky-index="${index}">
+    		<form id="editForm" data-sky-id="${id}">
     		<div id="toolbar">
 			    <button data-sky-mark="bold">Bold</button>
 			    <button data-sky-mark="italicize">Italic</button>
 			</div>
 			<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerText || editable.textContent}</div>
-			<button type="submit" data-sky-index="${index}">Save</button>
+			<button type="submit" data-sky-id="${id}">Save</button>
 			</form>
     		`;
     }
@@ -810,18 +811,29 @@ async function readEditables(skyKey) {
     });
 }
 
-
-async function updateEditable(content) {
+// Assuming the updated structure of editable objects includes id, skyKey, and html content
+async function updateEditable(id, newContent) {
     const db = await openDB();
     const transaction = db.transaction("editables", "readwrite");
     const store = transaction.objectStore("editables");
+    const editableRequest = store.get(id);
 
     return new Promise((resolve, reject) => {
-        const request = store.put(content);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = (event) => reject(event.target.error);
+        editableRequest.onsuccess = async () => {
+            const editable = editableRequest.result;
+            if (editable) {
+                editable.content = newContent; // Assuming 'html' is where the content is stored
+                const updateRequest = store.put(editable);
+                updateRequest.onsuccess = () => resolve(updateRequest.result);
+                updateRequest.onerror = (event) => reject(event.target.error);
+            } else {
+                reject(new Error("Editable not found"));
+            }
+        };
+        editableRequest.onerror = (event) => reject(event.target.error);
     });
 }
+
 
 async function deleteEditable(id) {
     const db = await openDB();
@@ -1381,28 +1393,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		// EDIT PAGE
 		if (event.target.matches('#editForm')) {
-	        event.preventDefault();
+		    event.preventDefault();
 
-	        const editDialog = document.getElementById('editDialog');
-	        const skyKey = document.body.getAttribute('data-sky-key');
-	        const index = event.target.getAttribute('data-sky-index');
+		    // Assuming the wrapper is directly around the editable element or is the parent you assign the ID to
+		    const wrapper = event.target.closest('.editable-wrapper, .editable-wrapper-open');
+		    if (!wrapper) return; // Safeguard against no wrapper found
 
-	        const formData = new FormData(event.target);
-	        const newContent = formData.get('newEditable');
+		    const id = wrapper.dataset.skyId; // Get ID from the wrapper's data attribute
+		    const formData = new FormData(event.target);
+		    const newContent = formData.get('newEditable');
 
-	        await updateEditable(skyKey, index, newContent);
+		    console.log(newContent)
 
-	        const editableElement = document.querySelector(`[data-sky-index="${index}"]`);
+		    try {
+		        await updateEditable(id, newContent);
 
-	        if (editableElement) {
-	            const contentElement = editableElement.querySelector('[data-sky-element]');
-	            if (contentElement) {
-	                contentElement.innerHTML = newContent;
-	            }
-	        }
+		        // Optional: Direct DOM update, might be redundant if the page reloads or if another mechanism updates the UI
+		        if (wrapper) {
+		            const contentElement = wrapper.querySelector('[data-sky-element]');
+		            if (contentElement) {
+		                contentElement.innerHTML = newContent;
+		            }
+		        }
 
-	        document.getElementById('editDialog').close();
-	    }
+		        document.getElementById('editDialog').close();
+		    } catch (error) {
+		        console.error("Error updating editable:", error);
+		        // Handle error (e.g., show a message to the user)
+		    }
+		}
 	});
 
 	// EVENTS (CHANGE)
