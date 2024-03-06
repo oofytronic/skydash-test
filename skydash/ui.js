@@ -687,11 +687,11 @@ function genNewCollectionObject(data) {
 
 function genNewEditableObject(data) {
 	return {
-		id: data.newId,
+		id: data.index,
 		skyKey: data.skyKey,
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString(),
-		html: {}
+		content: {}
 	};
 }
 
