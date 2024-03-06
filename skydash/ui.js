@@ -285,39 +285,6 @@ function inferEditableType(tagName) {
     }
 }
 
-function wrapEditableElement(element, index) {
-    const wrapper = document.createElement('div');
-
-    let toolbarHTML;
-
-    if (element.getAttribute('data-sky-field')) {
-    	wrapper.className = 'editable-wrapper-open';
-    	// wrapper.setAttribute('data-sky-index', index);
-    	toolbarHTML = renderEditableToolbar("field", index);
-    } else if (element.getAttribute('data-sky-component')) {
-    	wrapper.className = 'editable-wrapper-open';
-    	// wrapper.setAttribute('data-sky-index', index);
-    	toolbarHTML = renderEditableToolbar('component', index);
-    } else {
-    	wrapper.className = 'editable-wrapper';
-    	wrapper.setAttribute('data-sky-index', index);			
-    	const editableType = inferEditableType(element.tagName);
-    	toolbarHTML = renderEditableToolbar(editableType, index);
-    }
-    
-    element.parentNode.insertBefore(wrapper, element);
-    
-    wrapper.appendChild(element);
-
-    const toolbar = document.createElement('div');
-    toolbar.innerHTML = toolbarHTML;
-
-    // Append each toolbar button as a child of the wrapper. 
-    Array.from(toolbar.children).forEach(child => {
-        wrapper.appendChild(child);
-    });
-}
-
 function editEditable(wrapper, button, skyKey) {
 	const index = wrapper.getAttribute('data-sky-index');
 	const type = button.getAttribute('data-sky-type');
@@ -387,25 +354,58 @@ function editEditable(wrapper, button, skyKey) {
 }
 
 // TEMPLATES (HTML)
-function renderEditableToolbar(editableType, index) {
+function wrapEditableElement(element, id) {
+    const wrapper = document.createElement('div');
+
+    let toolbarHTML;
+
+    if (element.getAttribute('data-sky-field')) {
+    	wrapper.className = 'editable-wrapper-open';
+    	// wrapper.setAttribute('data-sky-id', id);
+    	toolbarHTML = renderEditableToolbar("field", id);
+    } else if (element.getAttribute('data-sky-component')) {
+    	wrapper.className = 'editable-wrapper-open';
+    	// wrapper.setAttribute('data-sky-id', id);
+    	toolbarHTML = renderEditableToolbar('component', id);
+    } else {
+    	wrapper.className = 'editable-wrapper';
+    	wrapper.setAttribute('data-sky-id', id);			
+    	const editableType = inferEditableType(element.tagName);
+    	toolbarHTML = renderEditableToolbar(editableType, id);
+    }
+    
+    element.parentNode.insertBefore(wrapper, element);
+    
+    wrapper.appendChild(element);
+
+    const toolbar = document.createElement('div');
+    toolbar.innerHTML = toolbarHTML;
+
+    // Append each toolbar button as a child of the wrapper. 
+    Array.from(toolbar.children).forEach(child => {
+        wrapper.appendChild(child);
+    });
+}
+
+function renderEditableToolbar(editableType, id) {
     switch (editableType) {
         case 'image':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="swap-image">Swap Image</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="swap-image">Swap Image</button>
                 </div>`;
         case 'text':
             return `
             	<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="edit">Edit Text</button>
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="edit">Edit Text</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
                 </div>
             `;
         case 'block':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
                 </div>`;
         case 'field':
             return `<div class="sky-edit-toolbar-inside">
@@ -417,7 +417,7 @@ function renderEditableToolbar(editableType, index) {
                 </div>`;
         default:
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-index="${index}" data-sky-type="${editableType}" data-sky-action="edit">Edit</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="edit">Edit</button>
                 </div>`;
     }
 }
@@ -685,13 +685,13 @@ function genNewCollectionObject(data) {
 	};
 }
 
-function genNewEditableObject(data) {
+function genNewEditableObject({ id, skyKey, content }) {
 	return {
-		id: data.index,
-		skyKey: data.skyKey,
+		id,
+		skyKey,
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString(),
-		content: {}
+		content
 	};
 }
 
@@ -753,13 +753,37 @@ async function openDB() {
 }
 
 // Editables
-async function createEditables(skyKey, content) {
+// async function createEditables(skyKey, content) {
+//     const db = await openDB();
+//     const tx = db.transaction("editables", "readwrite");
+//     const store = tx.objectStore("editables");
+//     const request = store.put({ id: skyKey, content });
+
+//     return new Promise((resolve, reject) => {
+//         request.onsuccess = () => resolve(request.result);
+//         request.onerror = (event) => reject(event.target.error);
+//     });
+// }
+
+async function createEditable(content) {
     const db = await openDB();
-    const tx = db.transaction("editables", "readwrite");
-    const store = tx.objectStore("editables");
-    const request = store.put({ id: skyKey, content });
+    const transaction = db.transaction("editables", "readwrite");
+    const store = transaction.objectStore("editables");
 
     return new Promise((resolve, reject) => {
+        const request = store.add(content);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function readEditable(id) {
+    const db = await openDB();
+    const transaction = db.transaction("editables", "readonly");
+    const store = transaction.objectStore("editables");
+
+    return new Promise((resolve, reject) => {
+        const request = store.get(id);
         request.onsuccess = () => resolve(request.result);
         request.onerror = (event) => reject(event.target.error);
     });
@@ -769,102 +793,98 @@ async function readEditables(skyKey) {
     const db = await openDB();
     const tx = db.transaction("editables", "readonly");
     const store = tx.objectStore("editables");
-    const request = store.get(skyKey);
+    const allEditablesRequest = store.getAll();
 
     return new Promise((resolve, reject) => {
-        request.onsuccess = () => {
-            const result = request.result;
-            resolve(result);
+        allEditablesRequest.onsuccess = () => {
+            // Ensure the result is always treated as an array
+            const allEditables = allEditablesRequest.result || [];
+            // Filter the editables by skyKey
+            const filteredEditables = allEditables.filter(item => item.skyKey === skyKey);
+            resolve(filteredEditables);
         };
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function updateEditable(skyKey, index, newContent) {
-    const db = await openDB();
-    const tx = db.transaction("editables", "readwrite");
-    const store = tx.objectStore("editables");
-
-    // Use a promise to wait for the get operation to complete
-    const editableContent = await new Promise((resolve, reject) => {
-        const request = store.get(skyKey);
-        request.onsuccess = () => {
-            // Check if the entry exists, if not, create a new structure
-            resolve(request.result);
-        };
-        request.onerror = (event) => {
+        allEditablesRequest.onerror = (event) => {
+            console.error("Failed to read all editables from IndexedDB:", event.target.error);
             reject(event.target.error);
         };
     });
-
-    // Now, editableContent is properly awaited and should be an object or a new structure
-    // Modify the content
-    editableContent.content[index].html = newContent;
-
-    // Use a promise to wait for the put operation to complete
-    return new Promise((resolve, reject) => {
-        const updateRequest = store.put(editableContent);
-        updateRequest.onsuccess = () => resolve(updateRequest.result);
-        updateRequest.onerror = (event) => reject(event.target.error);
-    });
 }
 
-function getEditablesFromPage(skyKey) {
-    const editables = document.querySelectorAll('[data-sky-element]');
 
-    let list = {}
-
-    editables.forEach((editable, index) => {
-    	let data = {};
-    	data.newId = Date.now().toString();
-    	data.skyKey = skyKey;
-
-    	let obj = genNewEditableObject(data)
-        obj.html = editable.outerHTML;
-        obj.index = index;
-        list[index] = obj;
-    });
-
-    return list;
-}
-
-function updatePageWithEditables(skyKey, editableContent) {
-    Object.entries(editableContent).forEach(([index, content]) => {
-        const editableWrapper = document.querySelector(`.editable-wrapper [data-sky-index="${index}"]`);
-        const editableElement = editableWrapper.querySelector('[data-sky-element]');
-        if (editableElement) {
-            editableElement.innerHTML = content.html;
-        }
-    });
-}
-
-async function initializeEditables(skyKey) {
-    if (!skyKey) return;
-
+async function updateEditable(content) {
     const db = await openDB();
+    const transaction = db.transaction("editables", "readwrite");
+    const store = transaction.objectStore("editables");
 
-    // 1. Get Elements
-    const editableElements = document.querySelectorAll('[data-sky-element]');
-
-    // 2.
-
-
-    // let editableContent = await readEditables(skyKey).content;
-
-    // if (!editableContent) {
-    //     // If no editable content is found for the skyKey, gather initial content
-    //     const initialList = getEditablesFromPage(skyKey);
-    //     console.log("Initial content:", initialList);
-
-    //     // Create a new entry in IndexedDB for this skyKey
-    //     await createEditables(skyKey, initialList);
-
-    //     editableContent = initialList;
-    // }
-
-    // // Use editableContent to update the page
-    // updatePageWithEditables(skyKey, editableContent);
+    return new Promise((resolve, reject) => {
+        const request = store.put(content);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
+
+async function deleteEditable(id) {
+    const db = await openDB();
+    const transaction = db.transaction("editables", "readwrite");
+    const store = transaction.objectStore("editables");
+
+    return new Promise((resolve, reject) => {
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function initializeEditables() {
+    const skyKey = document.body.getAttribute('data-sky-key'); // Assume the skyKey is stored on the <body>
+    const editablesOnPage = document.querySelectorAll('[data-sky-element]');
+    const editablesInDb = await readEditables(skyKey);
+
+    await Promise.all(Array.from(editablesOnPage).map(async (element, index) => {
+        const id = `${skyKey}-${index}`;
+        const contentFromDb = editablesInDb.find(item => item.id === id);
+
+        // Wrap the element with the wrapper and pass the unique ID
+        wrapEditableElement(element, id);
+
+        if (contentFromDb) {
+            // If there's a match in IndexedDB, update the page element with the content from IndexedDB
+            element.innerHTML = contentFromDb.content; // Assuming the stored content is in a `content` field
+        } else {
+            // If there's no match, create a new object and add it to IDB
+            const newEditableObject = genNewEditableObject({ id, skyKey, content: element.outerHTML });
+            await createEditable(newEditableObject);
+        }
+    }));
+}
+
+// async function initializeEditables(skyKey) {
+//     if (!skyKey) return;
+
+//     const db = await openDB();
+
+//     // 1. Get Elements
+//     const editableElements = document.querySelectorAll('[data-sky-element]');
+
+//     // 2.
+
+
+//     // let editableContent = await readEditables(skyKey).content;
+
+//     // if (!editableContent) {
+//     //     // If no editable content is found for the skyKey, gather initial content
+//     //     const initialList = getEditablesFromPage(skyKey);
+//     //     console.log("Initial content:", initialList);
+
+//     //     // Create a new entry in IndexedDB for this skyKey
+//     //     await createEditables(skyKey, initialList);
+
+//     //     editableContent = initialList;
+//     // }
+
+//     // // Use editableContent to update the page
+//     // updatePageWithEditables(skyKey, editableContent);
+// }
 
 // Collections
 async function createCollection(collection) {
@@ -1092,9 +1112,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const editableFields = document.querySelectorAll('[data-sky-field]');
 	const editableComponents = document.querySelectorAll('[data-sky-component]');
 
-	editableElements.forEach((element, index) => {
-        wrapEditableElement(element, index);
-    });
+	// editableElements.forEach((element, index) => {
+    //     wrapEditableElement(element, index);
+    // });
 
     editableFields.forEach((element, index) => {
     	wrapEditableElement(element, index);
@@ -1104,11 +1124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     	wrapEditableElement(element, index);
     });
 
-    await initializeEditables(skyKey);
+    await initializeEditables();
 
-	await openDB()
-	.then(initializeEditables(skyKey))
-	.catch(error => console.error('Error initializing IndexedDB:', error));
+	// await openDB()
+	// .then(initializeEditables(skyKey))
+	// .catch(error => console.error('Error initializing IndexedDB:', error));
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
