@@ -841,21 +841,29 @@ function updatePageWithEditables(skyKey, editableContent) {
 async function initializeEditables(skyKey) {
     if (!skyKey) return;
 
-    let editableContent = await readEditables(skyKey).content;
+    const db = await openDB();
 
-    if (!editableContent) {
-        // If no editable content is found for the skyKey, gather initial content
-        const initialList = getEditablesFromPage(skyKey);
-        console.log("Initial content:", initialList);
+    // 1. Get Elements
+    const editableElements = document.querySelectorAll('[data-sky-element]');
 
-        // Create a new entry in IndexedDB for this skyKey
-        await createEditables(skyKey, initialList);
+    // 2.
 
-        editableContent = initialList;
-    }
 
-    // Use editableContent to update the page
-    updatePageWithEditables(skyKey, editableContent);
+    // let editableContent = await readEditables(skyKey).content;
+
+    // if (!editableContent) {
+    //     // If no editable content is found for the skyKey, gather initial content
+    //     const initialList = getEditablesFromPage(skyKey);
+    //     console.log("Initial content:", initialList);
+
+    //     // Create a new entry in IndexedDB for this skyKey
+    //     await createEditables(skyKey, initialList);
+
+    //     editableContent = initialList;
+    // }
+
+    // // Use editableContent to update the page
+    // updatePageWithEditables(skyKey, editableContent);
 }
 
 // Collections
@@ -1095,6 +1103,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     editableComponents.forEach((element, index) => {
     	wrapEditableElement(element, index);
     });
+
+    await initializeEditables(skyKey);
 
 	await openDB()
 	.then(initializeEditables(skyKey))
