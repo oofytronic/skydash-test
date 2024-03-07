@@ -754,18 +754,6 @@ async function openDB() {
 }
 
 // Editables
-// async function createEditables(skyKey, content) {
-//     const db = await openDB();
-//     const tx = db.transaction("editables", "readwrite");
-//     const store = tx.objectStore("editables");
-//     const request = store.put({ id: skyKey, content });
-
-//     return new Promise((resolve, reject) => {
-//         request.onsuccess = () => resolve(request.result);
-//         request.onerror = (event) => reject(event.target.error);
-//     });
-// }
-
 async function createEditable(content) {
     const db = await openDB();
     const transaction = db.transaction("editables", "readwrite");
@@ -834,7 +822,6 @@ async function updateEditable(id, newContent) {
     });
 }
 
-
 async function deleteEditable(id) {
     const db = await openDB();
     const transaction = db.transaction("editables", "readwrite");
@@ -869,34 +856,6 @@ async function initializeEditables() {
         }
     }));
 }
-
-// async function initializeEditables(skyKey) {
-//     if (!skyKey) return;
-
-//     const db = await openDB();
-
-//     // 1. Get Elements
-//     const editableElements = document.querySelectorAll('[data-sky-element]');
-
-//     // 2.
-
-
-//     // let editableContent = await readEditables(skyKey).content;
-
-//     // if (!editableContent) {
-//     //     // If no editable content is found for the skyKey, gather initial content
-//     //     const initialList = getEditablesFromPage(skyKey);
-//     //     console.log("Initial content:", initialList);
-
-//     //     // Create a new entry in IndexedDB for this skyKey
-//     //     await createEditables(skyKey, initialList);
-
-//     //     editableContent = initialList;
-//     // }
-
-//     // // Use editableContent to update the page
-//     // updatePageWithEditables(skyKey, editableContent);
-// }
 
 // Collections
 async function createCollection(collection) {
