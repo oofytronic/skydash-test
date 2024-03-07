@@ -238,9 +238,9 @@ async function openMediaLibrary(callback) {
   });
 }
 
-function swapImageSource(oldImageElement, newImageSrc, index, skyKey, wrapper) {
-  oldImageElement.src = newImageSrc; // Swap the src attribute of the original image
-  updateEditable(skyKey, index, wrapper.outerHTML);
+function swapImageSource(oldImageElement, newImageSrc, id, skyKey, wrapper) {
+  oldImageElement.src = newImageSrc;
+  updateEditable(id, newImageSrc);
 }
 
 async function loadMediaPreviews() {
@@ -339,9 +339,8 @@ function editEditable(wrapper, button, skyKey) {
     if (type === "image") {
     	const imageToSwap = button.closest('.editable-wrapper, .editable-wrapper-open').querySelector('img'); // Adjust selector as needed
 
-	    // Open the media library and define what to do once an image is selected
 	    openMediaLibrary(function(selectedImageSrc) {
-	      swapImageSource(imageToSwap, selectedImageSrc, index, skyKey, wrapper);
+	      swapImageSource(imageToSwap, selectedImageSrc, id, skyKey, wrapper);
 	    });
     }
 
@@ -799,7 +798,6 @@ async function readEditables(skyKey) {
     });
 }
 
-// Assuming the updated structure of editable objects includes id, skyKey, and html content
 async function updateEditable(id, newContent) {
     const db = await openDB();
     const transaction = db.transaction("editables", "readwrite");
@@ -1354,31 +1352,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 		if (event.target.matches('#editForm')) {
 		    event.preventDefault();
 
-		    // Assuming the wrapper is directly around the editable element or is the parent you assign the ID to
-		    const wrapper = event.target.closest('.editable-wrapper, .editable-wrapper-open');
-		    if (!wrapper) return; // Safeguard against no wrapper found
+		    // Extract the 'data-sky-id' directly from the form element
+		    const id = event.target.dataset.skyId;
 
-		    const id = wrapper.dataset.skyId; // Get ID from the wrapper's data attribute
+		    // Ensure the ID is correctly retrieved before proceeding
+		    if (!id) {
+		        console.error("No sky ID found on the form");
+		        return;
+		    }
+
 		    const formData = new FormData(event.target);
 		    const newContent = formData.get('newEditable');
 
-		    console.log(newContent)
-
 		    try {
+		        // Update the content in IndexedDB
 		        await updateEditable(id, newContent);
 
-		        // Optional: Direct DOM update, might be redundant if the page reloads or if another mechanism updates the UI
-		        if (wrapper) {
-		            const contentElement = wrapper.querySelector('[data-sky-element]');
-		            if (contentElement) {
-		                contentElement.innerHTML = newContent;
-		            }
+		        // Find the wrapper using the ID to update the DOM
+		        const wrapper = document.querySelector(`.editable-wrapper[data-sky-id="${id}"]`);
+		        if (!wrapper) {
+		            console.error("Wrapper not found");
+		            return;
 		        }
 
+		        // Assuming the editable content directly within the wrapper needs to be updated
+		        const contentElement = wrapper.querySelector('[data-sky-element]');
+		        if (contentElement) {
+		            contentElement.innerHTML = newContent;
+		        }
+
+		        // Close the dialog once update is successful
 		        document.getElementById('editDialog').close();
 		    } catch (error) {
 		        console.error("Error updating editable:", error);
-		        // Handle error (e.g., show a message to the user)
+		        // Optionally, handle the error, e.g., show an error message to the user
 		    }
 		}
 	});
