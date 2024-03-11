@@ -330,7 +330,7 @@ function editEditable(wrapper, button, skyKey) {
 			    <button data-sky-mark="bold">Bold</button>
 			    <button data-sky-mark="italicize">Italic</button>
 			</div>
-			<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerText || editable.textContent}</div>
+			<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerHTML}</div>
 			<button type="submit" data-sky-id="${id}">Save</button>
 			</form>
     		`;
