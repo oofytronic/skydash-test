@@ -1099,6 +1099,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// .then(initializeEditables(skyKey))
 	// .catch(error => console.error('Error initializing IndexedDB:', error));
 
+	let currentEditable = null; // To keep track of the currently editable element
+
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
 
@@ -1106,6 +1108,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 			event.preventDefault();
 	        const action = event.target.getAttribute('data-sky-mark');
 	        applyMarkdown(action);
+	    }
+
+		// Function to enter edit mode
+		function enterEditMode(element) {
+		    if (!element.classList.contains('is-editing')) {
+		        element.contentEditable = true;
+		        element.classList.add('is-editing');
+		        currentEditable = element; // Keep track of the current editable element
+		    }
+		}
+
+		// Function to exit edit mode and save changes
+		function exitEditMode(element) {
+		    if (element && element.classList.contains('is-editing')) {
+		        element.contentEditable = false;
+		        element.classList.remove('is-editing');
+		        updateEditableContent(element); // Save changes or update IndexedDB here
+		        currentEditable = null; // Clear the reference
+		    }
+		}
+
+		// Placeholder for updating the content in IndexedDB or elsewhere
+		function updateEditableContent(element) {
+		    console.log('Content updated for', element.innerHTML);
+		    // Implement your logic to update the content in IndexedDB or elsewhere
+		}
+
+		const targetEditable = event.target.closest('[data-sky-element]');
+
+	    // If a 'data-sky-element' was clicked or a child of it
+	    if (targetEditable) {
+	        // If there's a different element being edited, save changes and exit edit mode
+	        if (currentEditable && currentEditable !== targetEditable) {
+	            exitEditMode(currentEditable);
+	        }
+	        // Enter edit mode for the clicked or parent element
+	        enterEditMode(targetEditable);
+	    } else if (currentEditable && !currentEditable.contains(event.target)) {
+	        // Click is outside the current editable element
+	        exitEditMode(currentEditable);
 	    }
 
 		if (event.target.matches('.sky-edit-button')) {
