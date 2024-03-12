@@ -301,44 +301,44 @@ function editEditable(wrapper, button, skyKey) {
     const editable = wrapper.querySelector('[data-sky-element]');
     const action = button.getAttribute('data-sky-action');
 
-    if (type === "text") {
-    	if (action === "edit") {
-    		const editDialog = document.querySelector('[data-sky-dialog="edit"');
-    		editDialog.show();
-    		const body = renderEditDialog();
-    		editDialog.innerHTML = body;
+    // if (type === "text") {
+    // 	if (action === "edit") {
+    // 		const editDialog = document.querySelector('[data-sky-dialog="edit"');
+    // 		editDialog.show();
+    // 		const body = renderEditDialog();
+    // 		editDialog.innerHTML = body;
 
-    		editDialog.innerHTML += `
-    		<form id="editForm" data-sky-id="${id}">
-    		<input name="newEditable" id="newEditable" type="text" value="${editable.innerText || editable.textContent}">
-    		<button type="submit" data-sky-id="${id}">Save</button>
-    		</form>
-    		`;
-    	}
+    // 		editDialog.innerHTML += `
+    // 		<form id="editForm" data-sky-id="${id}">
+    // 		<input name="newEditable" id="newEditable" type="text" value="${editable.innerText || editable.textContent}">
+    // 		<button type="submit" data-sky-id="${id}">Save</button>
+    // 		</form>
+    // 		`;
+    // 	}
 
-    	if (action === "bold" || action === "italicize" || action === "underline") {
-    		applyMarkdown(action);
-    	}
-    }
+    // 	if (action === "bold" || action === "italicize" || action === "underline") {
+    // 		applyMarkdown(action);
+    // 	}
+    // }
 
-    if (type === "block") {
+    // if (type === "block") {
 
-    	const editDialog = document.querySelector('[data-sky-dialog="edit"');
-    		editDialog.show();
-    		const body = renderEditDialog();
-    		editDialog.innerHTML = body;
+    // 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
+    // 		editDialog.show();
+    // 		const body = renderEditDialog();
+    // 		editDialog.innerHTML = body;
 
-    		editDialog.innerHTML += `
-    		<form id="editForm" data-sky-id="${id}">
-    		<div id="toolbar">
-			    <button data-sky-mark="bold">Bold</button>
-			    <button data-sky-mark="italicize">Italic</button>
-			</div>
-			<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerHTML}</div>
-			<button type="submit" data-sky-id="${id}">Save</button>
-			</form>
-    		`;
-    }
+    // 		editDialog.innerHTML += `
+    // 		<form id="editForm" data-sky-id="${id}">
+    // 		<div id="toolbar">
+	// 		    <button data-sky-mark="bold">Bold</button>
+	// 		    <button data-sky-mark="italicize">Italic</button>
+	// 		</div>
+	// 		<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerHTML}</div>
+	// 		<button type="submit" data-sky-id="${id}">Save</button>
+	// 		</form>
+    // 		`;
+    // }
 
     if (type === "image") {
     	const imageToSwap = button.closest('.editable-wrapper, .editable-wrapper-open').querySelector('img'); // Adjust selector as needed
@@ -400,7 +400,7 @@ function renderEditableToolbar(editableType, id) {
         case 'text':
             return `
             	<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="edit">Edit Text</button>
+	                TEXT
 	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
 	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
 	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
@@ -409,7 +409,11 @@ function renderEditableToolbar(editableType, id) {
             `;
         case 'block':
             return `<div class="sky-edit-toolbar">
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="block">Edit Block</button>
+	                BLOCK
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
                 </div>`;
         case 'field':
             return `<div class="sky-edit-toolbar-inside">
