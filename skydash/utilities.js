@@ -10,18 +10,32 @@ export function truncateString(str, maxLength = 60) {
     }
 }
 
-export function applyMarkdown(action) {
+export function applyMarkdown(action, linkURL = '') {
     const selection = window.getSelection();
     if (!selection.rangeCount) return false;
     let range = selection.getRangeAt(0);
-    if (range && !selection.isCollapsed) {
-        const span = document.createElement('span');
-        if (action === "bold") {
-            span.style["fontWeight"] = 'bold';
-        }
-        //span.style[action] = action === 'fontWeight' ? 'bold' : 'italic'; // Adjust based on the style being applied
-        range.surroundContents(span);
-        selection.removeAllRanges();
-        selection.addRange(range);
+
+    if (!range || selection.isCollapsed) {
+        return false; // No text is selected or there is no range
     }
+
+    const span = document.createElement('span');
+
+    if (action === "bold" || action === "italicize" || action === "underline") {
+        span.style.fontWeight = (action === "bold") ? 'bold' : '';
+        span.style.fontStyle = (action === "italicize") ? 'italic' : '';
+        span.style.textDecoration = (action === "underline") ? 'underline' : '';
+        range.surroundContents(span);
+    } else if (action === "link" && linkURL) {
+        const link = document.createElement('a');
+        link.href = linkURL;
+        link.textContent = range.toString();
+        range.deleteContents(); // Remove the selected text
+        range.insertNode(link);
+    }
+
+    selection.removeAllRanges(); // Clear the selection
+    const newRange = document.createRange();
+    newRange.selectNodeContents(action === "link" ? link : span);
+    selection.addRange(newRange);
 }

@@ -308,12 +308,8 @@ function editEditable(wrapper, button, skyKey) {
     		`;
     	}
 
-    	if (action === "bold") {
-    		alert('BOLD');
-    	}
-
-    	if (action === "italicize") {
-    		alert('ITALICIZE');
+    	if (action === "bold" || action === "italicize" || action === "underline") {
+    		applyMarkdown(action);
     	}
     }
 
@@ -1104,9 +1100,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
 
-		if (event.target.matches('button[data-sky-mark]')) {
+		if (event.target.matches('button[data-sky-action]')) {
 			event.preventDefault();
-	        const action = event.target.getAttribute('data-sky-mark');
+	        const action = event.target.getAttribute('data-sky-action');
 	        applyMarkdown(action);
 	    }
 	    // WWWorking
