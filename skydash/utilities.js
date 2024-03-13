@@ -19,23 +19,55 @@ export function applyMarkdown(action, linkURL = '') {
         return false; // No text is selected or there is no range
     }
 
-    const span = document.createElement('span');
+    // Check if the selection is already wrapped in the desired tag
+    const parentNode = selection.anchorNode.parentElement;
+    const alreadyApplied = (action === "bold" && parentNode.tagName === "STRONG") ||
+                            (action === "italicize" && parentNode.tagName === "EM") ||
+                            (action === "underline" && parentNode.style.textDecoration === "underline");
 
-    if (action === "bold" || action === "italicize" || action === "underline") {
-        span.style.fontWeight = (action === "bold") ? 'bold' : '';
-        span.style.fontStyle = (action === "italicize") ? 'italic' : '';
-        span.style.textDecoration = (action === "underline") ? 'underline' : '';
-        range.surroundContents(span);
-    } else if (action === "link" && linkURL) {
-        const link = document.createElement('a');
-        link.href = linkURL;
-        link.textContent = range.toString();
-        range.deleteContents(); // Remove the selected text
-        range.insertNode(link);
+    // Toggle the formatting based on the current state
+    if (alreadyApplied) {
+        // If already applied, unwrap the text from the tag
+        let textNode = document.createTextNode(parentNode.textContent);
+        parentNode.parentNode.replaceChild(textNode, parentNode);
+        selection.removeAllRanges();
+        let newRange = document.createRange();
+        newRange.selectNodeContents(textNode);
+        selection.addRange(newRange);
+    } else {
+        // Apply the formatting by wrapping the selected text
+        let tag;
+        switch (action) {
+            case "bold":
+                tag = document.createElement('strong');
+                break;
+            case "italicize":
+                tag = document.createElement('em');
+                break;
+            case "underline":
+                const span = document.createElement('span');
+                span.style.textDecoration = 'underline';
+                tag = span;
+                break;
+            case "link":
+                if (linkURL) {
+                    tag = document.createElement('a');
+                    tag.href = linkURL;
+                    tag.textContent = range.toString();
+                    range.deleteContents(); // Remove the selected text
+                    range.insertNode(tag);
+                }
+                break;
+        }
+
+        if (action !== "link") {
+            range.surroundContents(tag);
+        }
+
+        // Update the selection to the new node
+        selection.removeAllRanges();
+        let newRange = document.createRange();
+        newRange.selectNodeContents(tag);
+        selection.addRange(newRange);
     }
-
-    selection.removeAllRanges(); // Clear the selection
-    const newRange = document.createRange();
-    newRange.selectNodeContents(action === "link" ? link : span);
-    selection.addRange(newRange);
 }

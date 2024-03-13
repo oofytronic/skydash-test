@@ -99,7 +99,7 @@ function injectSkyDashStyles() {
 
 		.editable-wrapper:hover {
 			/* border: #7F557B 1px solid; */
-			box-shadow: inset 0 0 0 2px #7F557B;
+			box-shadow: inset 0 0 0 1px #7F557B;
 		}
 
 		.editable-wrapper-open {
@@ -113,7 +113,7 @@ function injectSkyDashStyles() {
 
 		.editable-wrapper-open:hover {
 			/* border: #7F557B 1px solid; */
-			box-shadow: inset 0 0 0 2px #7F557B;
+			box-shadow: inset 0 0 0 1px #7F557B;
 		}
 
 		.sky-edit-toolbar {
@@ -121,8 +121,11 @@ function injectSkyDashStyles() {
 		    top: -33px;
 		    left: -1px;
 		    display: none;
-		    background-color: #7F557B;
-		    border: 1px solid #7F557B;
+		    background-color: none;
+			border-top: 1px solid #7F557B;
+			border-right: 1px solid #7F557B;
+			border-left: 1px solid #7F557B;
+			border-bottom: 1px solid transparent;
 		    border-radius: 5px 5px 0 0;
 		    padding: 5px;
 		    white-space: nowrap; /* Keeps the toolbar in a single line */
@@ -401,19 +404,19 @@ function renderEditableToolbar(editableType, id) {
             return `
             	<div class="sky-edit-toolbar">
 	                TEXT
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">B</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">I</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">U</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Link</button>
                 </div>
             `;
         case 'block':
             return `<div class="sky-edit-toolbar">
 	                BLOCK
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">Bold</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">Italicize</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">Underline</button>
-	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Insert Link</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="bold">B</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="italicize">I</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="underline">U</button>
+	                <button class="sky-edit-button" data-sky-id="${id}" data-sky-type="${editableType}" data-sky-action="link">Link</button>
                 </div>`;
         case 'field':
             return `<div class="sky-edit-toolbar-inside">
