@@ -1,6 +1,6 @@
 import {capitalize, truncateString, applyMarkdown} from './utilities.js';
 
-// SKYDASH UI
+// MAIN
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
@@ -34,6 +34,7 @@ function injectSkyDashStyles() {
 			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 			background-color: #F6F6F6;
 			overflow-y: auto;
+			transition: width 0.5s ease-in-out, height 0.5s ease-in-out;
 			z-index: 10000;
     	}
 
@@ -170,7 +171,6 @@ function injectSkyDashStyles() {
     document.head.appendChild(styleSheet);
 }
 
-// EDITABLE CONTENT
 async function openFieldEditor(field) {
     function activateFieldInDialog(fieldName) {
         const input = document.querySelector(`[name="${fieldName}"]`);
@@ -227,7 +227,7 @@ async function openMediaLibrary(callback) {
 	mediaDialog.show();
 	const body = renderMediaDialog();
 	mediaDialog.innerHTML = body;
-	await loadMediaPreviews();
+	await renderMediaPreviews();
 
 	// Handle selection of an image
   function handleMediaSelection(event) {
@@ -249,51 +249,14 @@ async function openMediaLibrary(callback) {
   });
 }
 
-function swapImageSource(oldImageElement, newImageSrc, id, skyKey, wrapper) {
-  oldImageElement.src = newImageSrc;
-  updateEditable(id, newImageSrc);
-}
-
-async function loadMediaPreviews() {
-    const mediaLibrary = await readAllMedia();
-    const mediaGallery = document.getElementById('mediaGallery');
-    mediaGallery.innerHTML = '';
-    mediaLibrary.forEach((media, index) => {
-        const imageElement = `
-        <div style="display: flex; flex-direction: column; border: 1px solid black; width: fit-content; height: fit-content;">
-        	<img src="${media.url}" alt="Image ${index}" data-media-index="${index}" data-media-id="${media.id}" style="width: 100px; margin: 5px;">
-        	<button class="delete-media-button">Delete</button>
-        </div>
-        `;
-        mediaGallery.innerHTML += imageElement;
-    });
-}
-
 async function readAndPreviewImage(file) {
     const reader = new FileReader();
     reader.onload = async function(event) {
         const imageSrc = event.target.result;
         addMedia(imageSrc);
-        await loadMediaPreviews();
+        await renderMediaPreviews();
     };
     reader.readAsDataURL(file);
-}
-
-function inferEditableType(tagName) {
-    switch (tagName.toUpperCase()) {
-        case 'IMG':
-            return 'image';
-        case 'P':
-            return 'text';
-        case 'SPAN':
-            return 'text';
-        case 'DIV':
-            return 'block';
-        case 'SECTION':
-            return 'block';
-        default:
-            return 'unknown';
-    }
 }
 
 function editEditable(wrapper, button, skyKey) {
@@ -304,50 +267,12 @@ function editEditable(wrapper, button, skyKey) {
     const editable = wrapper.querySelector('[data-sky-element]');
     const action = button.getAttribute('data-sky-action');
 
-    // if (type === "text") {
-    // 	if (action === "edit") {
-    // 		const editDialog = document.querySelector('[data-sky-dialog="edit"');
-    // 		editDialog.show();
-    // 		const body = renderEditDialog();
-    // 		editDialog.innerHTML = body;
-
-    // 		editDialog.innerHTML += `
-    // 		<form id="editForm" data-sky-id="${id}">
-    // 		<input name="newEditable" id="newEditable" type="text" value="${editable.innerText || editable.textContent}">
-    // 		<button type="submit" data-sky-id="${id}">Save</button>
-    // 		</form>
-    // 		`;
-    // 	}
-
-    // 	if (action === "bold" || action === "italicize" || action === "underline") {
-    // 		applyMarkdown(action);
-    // 	}
-    // }
-
-    // if (type === "block") {
-
-    // 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
-    // 		editDialog.show();
-    // 		const body = renderEditDialog();
-    // 		editDialog.innerHTML = body;
-
-    // 		editDialog.innerHTML += `
-    // 		<form id="editForm" data-sky-id="${id}">
-    // 		<div id="toolbar">
-	// 		    <button data-sky-mark="bold">Bold</button>
-	// 		    <button data-sky-mark="italicize">Italic</button>
-	// 		</div>
-	// 		<div id="editor" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px;">${editable.innerHTML}</div>
-	// 		<button type="submit" data-sky-id="${id}">Save</button>
-	// 		</form>
-    // 		`;
-    // }
-
     if (type === "image") {
     	const imageToSwap = button.closest('.editable-wrapper, .editable-wrapper-open').querySelector('img'); // Adjust selector as needed
 
 	    openMediaLibrary(function(selectedImageSrc) {
-	      swapImageSource(imageToSwap, selectedImageSrc, id, skyKey, wrapper);
+	    	imageToSwap.src = selectedImageSrc;
+  			updateEditable(id, selectedImageSrc);
 	    });
     }
 
@@ -362,17 +287,32 @@ function editEditable(wrapper, button, skyKey) {
 
 // TEMPLATES (HTML)
 function wrapEditableElement(element, id) {
+	function inferEditableType(tagName) {
+	    switch (tagName.toUpperCase()) {
+	        case 'IMG':
+	            return 'image';
+	        case 'P':
+	            return 'text';
+	        case 'SPAN':
+	            return 'text';
+	        case 'DIV':
+	            return 'block';
+	        case 'SECTION':
+	            return 'block';
+	        default:
+	            return 'unknown';
+	    }
+	}
+
     const wrapper = document.createElement('div');
 
     let toolbarHTML;
 
     if (element.getAttribute('data-sky-field')) {
     	wrapper.className = 'editable-wrapper-open';
-    	// wrapper.setAttribute('data-sky-id', id);
     	toolbarHTML = renderEditableToolbar("field", id);
     } else if (element.getAttribute('data-sky-component')) {
     	wrapper.className = 'editable-wrapper-open';
-    	// wrapper.setAttribute('data-sky-id', id);
     	toolbarHTML = renderEditableToolbar('component', id);
     } else {
     	wrapper.className = 'editable-wrapper';
@@ -388,7 +328,6 @@ function wrapEditableElement(element, id) {
     const toolbar = document.createElement('div');
     toolbar.innerHTML = toolbarHTML;
 
-    // Append each toolbar button as a child of the wrapper. 
     Array.from(toolbar.children).forEach(child => {
         wrapper.appendChild(child);
     });
@@ -499,6 +438,7 @@ function renderEditDialog(editable) {
 function renderCollectionsDialog(collections) {
 	return `
 		<button data-sky-close="collections">Close</button>
+		<button class="expand-dialog-button" data-expanded="false">Expand</button>
 		<button onclick="document.querySelector('#form-container').style.display = 'block';">Create Collection</button>
 		<div id="form-container" style="display:none;">
 			<form
@@ -682,6 +622,21 @@ function renderInstanceEditForm(collectionData, instance) {
 	`;
 }
 
+async function renderMediaPreviews() {
+    const mediaLibrary = await readAllMedia();
+    const mediaGallery = document.getElementById('mediaGallery');
+    mediaGallery.innerHTML = '';
+    mediaLibrary.forEach((media, index) => {
+        const imageElement = `
+        <div style="display: flex; flex-direction: column; border: 1px solid black; width: fit-content; height: fit-content;">
+        	<img src="${media.url}" alt="Image ${index}" data-media-index="${index}" data-media-id="${media.id}" style="width: 100px; margin: 5px;">
+        	<button class="delete-media-button">Delete</button>
+        </div>
+        `;
+        mediaGallery.innerHTML += imageElement;
+    });
+}
+
 // TEMPLATES (DATA)
 function genNewCollectionObject(data) {
 	return {
@@ -712,18 +667,6 @@ function genNewInstanceObject(data) {
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString()
 	}
-}
-
-function genNewTempFormData(event) {
-	const formData = new FormData(event.target);
-	const tempData = {};
-	tempData.newId = Date.now().toString();
-
-	for (let [key, value] of formData.entries()) {
-	    tempData[key] = value;
-	}
-
-	return tempData;
 }
 
 // CACHE LAYER
@@ -1102,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await initializeEditables();
 
-	let currentEditable = null; // To keep track of the currently editable element
+	let currentEditable = null;
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
@@ -1150,6 +1093,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             editEditable(wrapper, button, skyKey);
         }
 
+        if (event.target.matches('.expand-dialog-button')) { // Assuming the button has a class 'expand-dialog-button'
+	        const dialog = event.target.closest('dialog');
+
+	        const isExpanded = event.target.dataset.expanded === 'true'; // Use a data attribute to track the state
+
+	        if (dialog) {
+	            if (isExpanded) {
+	                // Shrink the dialog
+	                 dialog.removeAttribute('style');
+	                event.target.textContent = 'Expand'; // Change the button text to "Expand"
+	            } else {
+	                // Expand the dialog
+	                dialog.style.width = 'calc(100% - 4rem)';
+		            dialog.style.height = 'calc(100% - 4rem)';
+		            dialog.style.bottom = 'auto';
+		            dialog.style.right = 'auto';
+		            dialog.style.top = '50%';
+		            dialog.style.left = '50%';
+		            dialog.style.transform = 'translate(-50%, -50%)';
+		            dialog.style.margin = 'auto';
+		            dialog.style.minHeight = '10%';
+		            dialog.style.maxHeight = 'inherit';
+	                event.target.textContent = 'Shrink'; // Change the button text to "Shrink"
+	            }
+
+	            event.target.dataset.expanded = !isExpanded; // Toggle the expanded state
+	        }
+	    }
+
         if (event.target.matches('[data-sky-open="dashboard"]')) {
         	dashboardDialog.show();
         	const body = renderDashboardDialog();
@@ -1170,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const body = renderMediaDialog();
 			mediaDialog.innerHTML = body;
 
-			await loadMediaPreviews();
+			await renderMediaPreviews();
 		}
 
 		if (event.target.matches('.delete-media-button')) {
@@ -1180,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 		    await deleteMedia(mediaId);
 
-			await loadMediaPreviews();
+			await renderMediaPreviews();
  		}
 
 		if (event.target.matches('[data-sky-close="dashboard"]')) {
@@ -1292,7 +1264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// CREATE COLLECTION
 		if (event.target.matches('#new-collection-form')) {
 			event.preventDefault();
-			//const tempData = genNewTempFormData(event);
 
 			function getGroupsFromFormData(formData) {
 			    const groupedArray = [];
@@ -1370,7 +1341,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 		// UPDATE INSTANCE
 		if (event.target.matches('#edit-instance-form')) {
 			event.preventDefault();
-			const tempData = genNewTempFormData(event);
+
+			const formData = new FormData(event.target);
+			let tempData = {};
+			tempData.newId = Date.now().toString();
+
+			for (let [key, value] of formData.entries()) {
+			    tempData[key] = value;
+			}
+
 			const collectionId = event.target.getAttribute('data-collection-id');
 			const instanceId = event.target.getAttribute('data-instance-id');
 			
