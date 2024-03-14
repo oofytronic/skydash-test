@@ -51,11 +51,27 @@ export function applyMarkdown(action, linkURL = '') {
                 break;
             case "link":
                 if (linkURL) {
-                    tag = document.createElement('a');
-                    tag.href = linkURL;
-                    tag.textContent = range.toString();
-                    range.deleteContents(); // Remove the selected text
-                    range.insertNode(tag);
+                    console.log(`Applying link: ${linkURL}`); // Log to confirm function is reached and URL is passed correctly
+
+                    if (range && !selection.isCollapsed) {
+                        const link = document.createElement('a');
+                        link.href = linkURL;
+                        link.textContent = range.toString();
+                        console.log(`Link text content: ${link.textContent}`); // Ensure text content is captured
+
+                        range.deleteContents(); // Remove the selected text
+                        range.insertNode(link);
+
+                        // Clear and re-select the range to include the new link
+                        selection.removeAllRanges();
+                        let newRange = document.createRange();
+                        newRange.selectNode(link);
+                        selection.addRange(newRange);
+                    } else {
+                        console.error("No text selected or invalid range for link.");
+                    }
+                } else {
+                    console.error("No URL provided for link action.");
                 }
                 break;
         }

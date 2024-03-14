@@ -826,7 +826,7 @@ async function initializeEditableFields() {
     	wrapEditableElement(element, index);
     });
 
-	for (field of editableFields) {
+	for (const field of editableFields) {
 		const fieldValue = field.getAttribute('data-sky-field');
 
 		// Step 1: Parse the data-sky-field value
@@ -850,6 +850,8 @@ async function initializeEditableFields() {
 		        console.error('Instance not found');
 		        return;
 		    }
+
+		    field.innerHTML = instance[fieldName];
 		} catch (error) {
 		    console.error('Error opening field editor:', error);
 		}
@@ -1082,11 +1084,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const editableFields = document.querySelectorAll('[data-sky-field]');
 	// const editableComponents = document.querySelectorAll('[data-sky-component]');
 
-    editableFields.forEach((element, index) => {
-    	wrapEditableElement(element, index);
-    });
-
     await initializeEditables();
+
+    await initializeEditableFields();
 
 	let currentEditable = null;
 
@@ -1135,9 +1135,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        	} catch (error) {
 	        		console.log(error);
 	        	}
-
 	        } else {
-	        	applyMarkdown(action);
+	        	if (action === "link") {
+	        		const inputWrapper = document.createElement('div');
+			        inputWrapper.innerHTML = `
+			            <input type="text" id="linkInput" placeholder="Enter web address">
+			            <button id="confirmLink">OK</button>
+			        `;
+			        document.body.appendChild(inputWrapper);
+
+			        // Focus the input for user convenience
+			        document.getElementById('linkInput').focus();
+
+			        // Wait for the user to confirm the link
+			        const linkAddress = await new Promise((resolve) => {
+			            document.getElementById('confirmLink').addEventListener('click', () => {
+			                const input = document.getElementById('linkInput');
+			                const value = input.value.trim();
+			                // Clean up: remove the input field from the DOM
+			                inputWrapper.remove();
+			                // Resolve the promise with the input value
+			                resolve(value);
+			            });
+			        });
+
+			        applyMarkdown(action, linkAddress);
+	        	} else {
+	        		applyMarkdown(action);
+	        	}
 	        }
 	    }
 
