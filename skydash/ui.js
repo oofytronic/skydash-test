@@ -1089,14 +1089,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeEditableFields();
 
 	let currentEditable = null;
+	let currentObserver = null;
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
+		function setupContentObserver(element, id) {
+			console.log('wfhiwehfewiofh')
+		    const observer = new MutationObserver((mutationsList, observer) => {
+		        // Here, we can handle the changes and update IDB as needed
+		        for (let mutation of mutationsList) {
+		            if (mutation.type === 'childList' || mutation.type === 'characterData' || mutation.type === 'attributes') {
+		                console.log(`Mutation observed: ${mutation.type}`);
+		                // Call function to update IDB, assuming it's async
+		                updateEditable(id, element.outerHTML).catch(console.error);
+		            }
+		        }
+		    });
+
+		    // Configuration of the observer:
+		    const config = { attributes: true, childList: true, subtree: true, characterData: true };
+
+		    // Start observing the target element for configured mutations
+		    observer.observe(element, config);
+
+		    // Return the observer instance for later disconnection
+		    return observer;
+		}
+
 		function enterEditMode(element) {
 		    if (!element.classList.contains('is-editing')) {
+		    	const wrapper = element.closest('.editable-wrapper, .editable-wrapper-open');
+		        const id = wrapper.dataset.skyId;
 		        element.contentEditable = true;
 		        element.classList.add('is-editing');
-		        currentEditable = element; // Set the current editable element
+		        currentEditable = element;
+
+		        currentObserver = setupContentObserver(element, id);
 		    }
 		}
 
@@ -1106,8 +1134,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 		        const id = wrapper.dataset.skyId; // Retrieve the id from the wrapper
 		        element.contentEditable = false;
 		        element.classList.remove('is-editing');
-		        // Assuming updateEditable takes an id and new content, and assuming element.innerHTML is the new content
+		       
 		        updateEditable(id, element.outerHTML);
+
+		        if (currentObserver) {
+		            currentObserver.disconnect(); // Disconnect the observer when editing is done
+		            currentObserver = null;
+		        }
+
 		        currentEditable = null; // Clear the reference to the current editable element
 		    }
 		}
