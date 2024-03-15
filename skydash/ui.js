@@ -1073,7 +1073,7 @@ async function deleteMedia(mediaId) {
 document.addEventListener('DOMContentLoaded', async () => {
 	createSkyDashUI();
 	injectSkyDashStyles();
-
+	
 	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
 	const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
 	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
