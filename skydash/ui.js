@@ -1278,11 +1278,79 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    	const data = {newId: newId};
 	    	const userObj = genNewUserObject(data);
 	    	await createUser(userObj);
+
+	    	const body = renderDashboardDialog();
+			dashboardDialog.innerHTML = body;
+
+			const userData = await readUsers();
+			const userDash = userData.map(user => {
+				return `<div style="background: gray; color: white; width: 10%;
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${user.name}</p>
+					<div>
+						${user.roles.map(role => `<p>${role}</p>`).join('')}
+					</div>
+					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
+				</div>`;
+			}).join('');
+
+			const userPane = document.querySelector('.sky-users-preview');
+			userPane.innerHTML = userDash;
+
+			const collectionData = await readCollections();
+			const collectionsDash = collectionData.map(collection => {
+				return `<div style="background: gray; color: white; width: 10%;
+				    padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;">
+					<p>${collection.displayName}</p>
+					<p>${collection.instances.length}</p>
+				</div>`
+			}).join('');
+
+			const collectionPane = document.querySelector('.sky-collections-preview');
+			collectionPane.innerHTML = collectionsDash;
 	    }
 
 	    if (event.target.matches('.delete-user-button')) {
 	    	const id = event.target.dataset.skyId;
 	    	await deleteUser(id);
+
+	    	const body = renderDashboardDialog();
+			dashboardDialog.innerHTML = body;
+
+			const userData = await readUsers();
+			const userDash = userData.map(user => {
+				return `<div style="background: gray; color: white; width: 10%;
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${user.name}</p>
+					<div>
+						${user.roles.map(role => `<p>${role}</p>`).join('')}
+					</div>
+					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
+				</div>`;
+			}).join('');
+
+			const userPane = document.querySelector('.sky-users-preview');
+			userPane.innerHTML = userDash;
+
+			const collectionData = await readCollections();
+			const collectionsDash = collectionData.map(collection => {
+				return `<div style="background: gray; color: white; width: 10%;
+				    padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;">
+					<p>${collection.displayName}</p>
+					<p>${collection.instances.length}</p>
+				</div>`
+			}).join('');
+
+			const collectionPane = document.querySelector('.sky-collections-preview');
+			collectionPane.innerHTML = collectionsDash;
 	    }
 
 		if (event.target.matches('button[data-sky-action]')) {
@@ -1380,10 +1448,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
 				return `<div style="background: gray; color: white; width: 10%;
-    padding: 0.5rem;
-    border-radius: 10px;
-    margin: 0.5rem 0;">
-					<p>${user.name}</p>
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${user.name}</p>
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
@@ -1397,9 +1465,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const collectionData = await readCollections();
 			const collectionsDash = collectionData.map(collection => {
 				return `<div style="background: gray; color: white; width: 10%;
-    padding: 0.5rem;
-    border-radius: 10px;
-    margin: 0.5rem 0;">
+				    padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;">
 					<p>${collection.displayName}</p>
 					<p>${collection.instances.length}</p>
 				</div>`
