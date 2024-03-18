@@ -1172,11 +1172,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        } else {
 	        	if (action === "link") {
 	        		const inputWrapper = document.createElement('div');
+	        		inputWrapper.style = "position: absolute; top: 0; left: 0;";
 			        inputWrapper.innerHTML = `
 			            <input type="text" id="linkInput" placeholder="Enter web address">
 			            <button id="confirmLink">OK</button>
 			        `;
-			        document.body.appendChild(inputWrapper);
+
+			        const parent = event.target.closest('.editable-wrapper');
+
+			        parent.appendChild(inputWrapper);
 
 			        // Focus the input for user convenience
 			        document.getElementById('linkInput').focus();
