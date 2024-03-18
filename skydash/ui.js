@@ -383,17 +383,37 @@ function renderDashboardDialog(collections) {
 		    </div>
 		</div>
 		<div>
+			<div style="display: flex; justify-content: space-between; gap: 2rem;">
+				<div class="sky-badge"
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+    border-radius: 10px;
+    margin: 0.5rem 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+                0 6px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
+				>
+					<h2>SkyBadge</h2>
+					<p>Kelly Sattaur</p>
+					<p>Captain</p>
+				</div>
+
+				<div class="sky-account"
+					style="background: gray; width: 50%; height: fit-content; color: white; padding: 0.5rem;
+    border-radius: 10px;
+    margin: 0.5rem 0;"
+				>
+					<h2>Account Overview</h2>
+					<p>Network: IPFS</p>
+				</div>
+			</div>
 			<div>
 				<h2>Users</h2>
+				<button class="create-user-button">Create User</button>
+				<div class="sky-users-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
 			<div>
 				<h2>Collections</h2>
-			</div>
-			<div>
-				<h2>Site Overview</h2>
-			</div>
-			<div>
-				<h2>Account Settings</h2>
+				<div class="sky-collections-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
 		</div>
 	`;
@@ -676,15 +696,13 @@ function genNewInstanceObject(data) {
 
 function genNewUserObject(data) {
 	return {
-	  cmsData: {
-	    id: data.newId,
-	    name: "Kelly Sattaur",
-	    roles: ["captain"],
-	    favicon: "",
-	    createdAt: new Date().toISOString(),
-	    updatedAt: new Date().toISOString()
-	  },
-	  didDocument: {
+    id: data.newId,
+    name: "Kelly Sattaur",
+    roles: ["captain"],
+    favicon: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+	didDocument: {
 	    did: "did:example:123456789abcdefghi",
 	    publicKey: "03daed4f7cbb2848b3c1fecb3f9f6588bcdeeb8a",
 	    authentication: [
@@ -1257,8 +1275,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    // WWWORKING
 	    if (event.target.matches('.create-user-button')) {
 	    	const newId = Date.now().toString();
-	    	const userObj = genNewUserObject(newId);
+	    	const data = {newId: newId};
+	    	const userObj = genNewUserObject(data);
 	    	await createUser(userObj);
+	    }
+
+	    if (event.target.matches('.delete-user-button')) {
+	    	const id = event.target.dataset.skyId;
+	    	await deleteUser(id);
 	    }
 
 		if (event.target.matches('button[data-sky-action]')) {
@@ -1352,6 +1376,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         	dashboardDialog.show();
         	const body = renderDashboardDialog();
 			dashboardDialog.innerHTML = body;
+
+			const userData = await readUsers();
+			const userDash = userData.map(user => {
+				return `<div style="background: gray; color: white; width: 10%;
+    padding: 0.5rem;
+    border-radius: 10px;
+    margin: 0.5rem 0;">
+					<p>${user.name}</p>
+					<div>
+						${user.roles.map(role => `<p>${role}</p>`).join('')}
+					</div>
+					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
+				</div>`;
+			}).join('');
+
+			const userPane = document.querySelector('.sky-users-preview');
+			userPane.innerHTML = userDash;
+
+			const collectionData = await readCollections();
+			const collectionsDash = collectionData.map(collection => {
+				return `<div style="background: gray; color: white; width: 10%;
+    padding: 0.5rem;
+    border-radius: 10px;
+    margin: 0.5rem 0;">
+					<p>${collection.displayName}</p>
+					<p>${collection.instances.length}</p>
+				</div>`
+			}).join('');
+
+			const collectionPane = document.querySelector('.sky-collections-preview');
+			collectionPane.innerHTML = collectionsDash;
         }
 
 		if (event.target.matches('[data-sky-open="collections"]')) {
