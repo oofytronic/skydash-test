@@ -674,6 +674,43 @@ function genNewInstanceObject(data) {
 	}
 }
 
+function genNewUserObject(data) {
+	return {
+	  cmsData: {
+	    id: data.newId,
+	    name: "Kelly Sattaur",
+	    roles: ["captain"],
+	    favicon: "",
+	    createdAt: new Date().toISOString(),
+	    updatedAt: new Date().toISOString()
+	  },
+	  didDocument: {
+	    did: "did:example:123456789abcdefghi",
+	    publicKey: "03daed4f7cbb2848b3c1fecb3f9f6588bcdeeb8a",
+	    authentication: [
+	      {
+	        id: "did:example:123456789abcdefghi#keys-1",
+	        type: "Ed25519VerificationKey2018",
+	        controller: "did:example:123456789abcdefghi",
+	        publicKeyHex: "03daed4f7cbb2848b3c1fecb3f9f6588bcdeeb8a"
+	      }
+	    ],
+	    service: [
+	      {
+	        id: "did:example:123456789abcdefghi#vcs",
+	        type: "VerifiableCredentialService",
+	        serviceEndpoint: "https://example.com/vc/"
+	      },
+	      {
+	        id: "did:example:123456789abcdefghi#messages",
+	        type: "MessagingService",
+	        serviceEndpoint: "https://example.com/messages/"
+	      }
+	    ]
+	  }
+	}
+}
+
 // CACHE
 async function openDB() {
   if (!window.indexedDB) {
@@ -696,17 +733,21 @@ async function openDB() {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains("collections")) {
-        db.createObjectStore("collections", { keyPath: "id" });
-      }
+		if (!db.objectStoreNames.contains("collections")) {
+			db.createObjectStore("collections", { keyPath: "id" });
+		}
 
-      if (!db.objectStoreNames.contains("mediaLibrary")) {
-        db.createObjectStore("mediaLibrary", { keyPath: "id" });
-      }
+		if (!db.objectStoreNames.contains("mediaLibrary")) {
+			db.createObjectStore("mediaLibrary", { keyPath: "id" });
+		}
 
-      if (!db.objectStoreNames.contains("editables")) {
-        db.createObjectStore("editables", { keyPath: "id" });
-      }
+		if (!db.objectStoreNames.contains("editables")) {
+			db.createObjectStore("editables", { keyPath: "id" });
+		}
+
+		if (!db.objectStoreNames.contains('users')) {
+		    db.createObjectStore('users', { keyPath: 'id' });
+		}
     };
   });
 }
@@ -1068,6 +1109,62 @@ async function deleteMedia(mediaId) {
     });
 }
 
+// Users
+async function createUser(user) {
+    const db = await openDB();
+    const transaction = db.transaction('users', 'readwrite');
+    const store = transaction.objectStore('users');
+    return new Promise((resolve, reject) => {
+        const request = store.add(user);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function readUsers() {
+    const db = await openDB();
+    const transaction = db.transaction('users', 'readonly');
+    const store = transaction.objectStore('users');
+    return new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function readUser(id) {
+    const db = await openDB();
+    const transaction = db.transaction('users', 'readonly');
+    const store = transaction.objectStore('users');
+    return new Promise((resolve, reject) => {
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function updateUser(user) {
+    const db = await openDB();
+    const transaction = db.transaction('users', 'readwrite');
+    const store = transaction.objectStore('users');
+    return new Promise((resolve, reject) => {
+        const request = store.put(user);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
+async function deleteUser(id) {
+    const db = await openDB();
+    const transaction = db.transaction('users', 'readwrite');
+    const store = transaction.objectStore('users');
+    return new Promise((resolve, reject) => {
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
+}
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1094,7 +1191,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
 		function setupContentObserver(element, id) {
-			console.log('wfhiwehfewiofh')
 		    const observer = new MutationObserver((mutationsList, observer) => {
 		        // Here, we can handle the changes and update IDB as needed
 		        for (let mutation of mutationsList) {
@@ -1156,6 +1252,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        enterEditMode(targetEditable);
 	    } else if (currentEditable && !currentEditable.contains(event.target)) {
 	        exitEditMode(currentEditable);
+	    }
+
+	    // WWWORKING
+	    if (event.target.matches('.create-user-button')) {
+	    	const newId = Date.now().toString();
+	    	const userObj = genNewUserObject(newId);
+	    	await createUser(userObj);
 	    }
 
 		if (event.target.matches('button[data-sky-action]')) {
