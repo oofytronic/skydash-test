@@ -1183,6 +1183,40 @@ async function deleteUser(id) {
     });
 }
 
+const permissionsList = [
+    "CREATE_COLLECTION",
+    "READ_COLLECTION",
+    "UPDATE_COLLECTION",
+    "DELETE_COLLECTION",
+    "CREATE_INSTANCE",
+    "READ_INSTANCE",
+    "UPDATE_INSTANCE",
+    "DELETE_INSTANCE",
+    "UPLOAD_MEDIA",
+    "DELETE_MEDIA",
+    "READ_MEDIA",
+    "EDIT_CONTENT",
+    "PUBLISH_CONTENT",
+    "CREATE_USER",
+    "DELETE_USER",
+    "UPDATE_USER_PERMISSIONS"
+]
+
+function isValidPermission(permission) {
+    return permissionsList.includes(permission);
+}
+
+async function canUserPerformOperation(userId, operationPermission) {
+    const userRole = await getUserRole(userId); // Implement this to get the user's role based on userId
+    const rolePermissions = await getRolePermissions(userRole); // Implement this to retrieve permissions for the role from IDB
+
+    if (isValidPermission(operationPermission) && rolePermissions.includes(operationPermission)) {
+        return true; // User can perform the operation
+    }
+    return false; // Operation not allowed
+}
+
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
