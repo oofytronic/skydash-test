@@ -1238,17 +1238,33 @@ async function createRole(roleData) {
   const db = await openDB();
   const tx = db.transaction('roles', 'readwrite');
   const store = tx.objectStore('roles');
-  const result = await store.add(roleData);
-  console.log('Role created with ID', result);
-  return result;
+  return new Promise((resolve, reject) => {
+	    const request = store.add(roleData);
+	    request.onsuccess = () => resolve(request.result);
+	    request.onerror = (event) => reject(event.target.error);
+	});
+}
+
+async function readRoles() {
+    const db = await openDB();
+    const transaction = db.transaction('roles', 'readonly');
+    const store = transaction.objectStore('roles');
+    return new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
 async function readRole(id) {
   const db = await openDB();
   const tx = db.transaction('roles', 'readonly');
   const store = tx.objectStore('roles');
-  const role = await store.get(id);
-  return role;
+  return new Promise((resolve, reject) => {
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
 async function updateRole(id, updates) {
@@ -1266,8 +1282,11 @@ async function deleteRole(id) {
   const db = await openDB();
   const tx = db.transaction('roles', 'readwrite');
   const store = tx.objectStore('roles');
-  await store.delete(id);
-  console.log('Role deleted');
+  return new Promise((resolve, reject) => {
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => reject(event.target.error);
+    });
 }
 
 
@@ -1467,20 +1486,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    		permissions: []
 	    	};
 	    	const roleObj = genNewRoleObject(data);
-			const roleData = await createRole(roleObj);
-			const roleDash = roleData.map(role => {
-				return `<div style="background: gray; color: white; width: 10%;
+			await createRole(roleObj);
+			const roleData = await readRole(newId);
+			const roleDash = `<div style="background: gray; color: white; width: 10%;
 					    padding: 0.5rem;
 					    border-radius: 10px;
 					    margin: 0.5rem 0;">
-						<p>${role.name}</p>
-					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
-					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
+						<p>${roleData.name}</p>
+					<button class="edit-role-button" data-sky-id="${roleData.id}">Edit Role</button>
+					<button class="delete-role-button" data-sky-id="${roleData.id}">Delete Role</button>
 				</div>`;
-			}).join('');
 
-			const userPane = document.querySelector('.sky-roles-preview');
-			userPane.innerHTML = roleDash;
+			const rolePane = document.querySelector('.sky-roles-preview');
+			rolePane.innerHTML = roleDash;
 	    }
 
 		if (event.target.matches('button[data-sky-action]')) {
@@ -1606,6 +1624,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 			const collectionPane = document.querySelector('.sky-collections-preview');
 			collectionPane.innerHTML = collectionsDash;
+
+			const roleData = await readRoles();
+			const roleDash = roleData.map(role => {
+				return `<div style="background: gray; color: white; width: 10%;
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${role.name}</p>
+					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
+					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
+				</div>`;
+			}).join('');
+
+			const rolePane = document.querySelector('.sky-roles-preview');
+			rolePane.innerHTML = roleDash;
         }
 
 		if (event.target.matches('[data-sky-open="collections"]')) {
