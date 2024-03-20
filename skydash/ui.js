@@ -729,6 +729,14 @@ function genNewUserObject(data) {
 	}
 }
 
+function genNewRoleObject(data) {
+	return {
+	    id: data.newId,
+	    name: data.name,
+	  	permissions: data.permissions
+	}
+}
+
 // CACHE
 async function openDB() {
   if (!window.indexedDB) {
@@ -765,6 +773,10 @@ async function openDB() {
 
 		if (!db.objectStoreNames.contains('users')) {
 		    db.createObjectStore('users', { keyPath: 'id' });
+		}
+
+		if (!db.objectStoreNames.contains("roles")) {
+			db.createObjectStore("roles", { keyPath: "id", autoIncrement: true });
 		}
     };
   });
@@ -1216,6 +1228,42 @@ async function canUserPerformOperation(userId, operationPermission) {
     return false; // Operation not allowed
 }
 
+// Roles
+async function createRole(roleData) {
+  const db = await openDB();
+  const tx = db.transaction('roles', 'readwrite');
+  const store = tx.objectStore('roles');
+  const result = await store.add(roleData);
+  console.log('Role created with ID', result);
+  return result;
+}
+
+async function readRole(id) {
+  const db = await openDB();
+  const tx = db.transaction('roles', 'readonly');
+  const store = tx.objectStore('roles');
+  const role = await store.get(id);
+  return role;
+}
+
+async function updateRole(id, updates) {
+  const db = await openDB();
+  const tx = db.transaction('roles', 'readwrite');
+  const store = tx.objectStore('roles');
+  const role = await store.get(id);
+  const updatedRole = { ...role, ...updates };
+  const result = await store.put(updatedRole);
+  console.log('Role updated', result);
+  return result;
+}
+
+async function deleteRole(id) {
+  const db = await openDB();
+  const tx = db.transaction('roles', 'readwrite');
+  const store = tx.objectStore('roles');
+  await store.delete(id);
+  console.log('Role deleted');
+}
 
 
 // EVENT LISTENERS
