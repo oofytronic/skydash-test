@@ -412,6 +412,11 @@ function renderDashboardDialog(collections) {
 				<div class="sky-users-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
 			<div>
+				<h2>Roles</h2>
+				<button class="create-role-button">Create Role</button>
+				<div class="sky-roles-preview" style="display: flex; gap: 1rem;"></div>
+			</div>
+			<div>
 				<h2>Collections</h2>
 				<div class="sky-collections-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
@@ -1279,7 +1284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const skyKey = document.body.getAttribute('data-sky-key');
 	const editableElements = document.querySelectorAll('[data-sky-element]');
 	const editableFields = document.querySelectorAll('[data-sky-field]');
-	// const editableComponents = document.querySelectorAll('[data-sky-component]');
 
     await initializeEditables();
 
@@ -1354,7 +1358,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	        exitEditMode(currentEditable);
 	    }
 
-	    // WWWORKING
 	    if (event.target.matches('.create-user-button')) {
 	    	const newId = Date.now().toString();
 	    	const data = {newId: newId};
@@ -1374,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
+					<button class="edit-user-button" data-sky-id="${user.id}">Edit User</button>
 					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
 				</div>`;
 			}).join('');
@@ -1396,6 +1400,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 			collectionPane.innerHTML = collectionsDash;
 	    }
 
+	    if (event.target.matches('.edit-user-button')) {
+	    	const id = event.target.dataset.skyId;
+	    	const userData = await readUser(id);
+
+	    	dashboardDialog.innerHTML = `
+	    	<div style="display: flex; justify-content: space-between; width: 100%;">
+		    	<h1>Dashboard</h1>
+		    	<div style="display: flex; gap: 1rem;">
+				    <button data-sky-close="dashboard">Close</button>
+			    </div>
+			</div>
+			<div>
+				<form>
+					<input type="text" name="role" value="${userData.roles}">
+				</form>
+			</div>`;
+	    }
+
 	    if (event.target.matches('.delete-user-button')) {
 	    	const id = event.target.dataset.skyId;
 	    	await deleteUser(id);
@@ -1413,6 +1435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
+					<button class="edit-user-button" data-sky-id="${user.id}">Edit User</button>
 					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
 				</div>`;
 			}).join('');
@@ -1433,6 +1456,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 			const collectionPane = document.querySelector('.sky-collections-preview');
 			collectionPane.innerHTML = collectionsDash;
+	    }
+
+	    // WWWORKING
+	    if (event.target.matches('.create-role-button')) {
+	    	const newId = Date.now().toString();
+	    	const data = {
+	    		newId: newId,
+	    		name: 'captain',
+	    		permissions: []
+	    	};
+	    	const roleObj = genNewRoleObject(data);
+			const roleData = await createRole(roleObj);
+			const roleDash = roleData.map(role => {
+				return `<div style="background: gray; color: white; width: 10%;
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${role.name}</p>
+					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
+					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
+				</div>`;
+			}).join('');
+
+			const userPane = document.querySelector('.sky-roles-preview');
+			userPane.innerHTML = roleDash;
 	    }
 
 		if (event.target.matches('button[data-sky-action]')) {
@@ -1537,6 +1585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
+					<button class="edit-user-button" data-sky-id="${user.id}">Edit User</button>
 					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
 				</div>`;
 			}).join('');
