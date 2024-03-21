@@ -1224,13 +1224,15 @@ function isValidPermission(permission) {
 }
 
 async function canUserPerformOperation(userId, operationPermission) {
-    const userRole = await getUserRole(userId); // Implement this to get the user's role based on userId
-    const rolePermissions = await getRolePermissions(userRole); // Implement this to retrieve permissions for the role from IDB
+    console.log(userId)
 
-    if (isValidPermission(operationPermission) && rolePermissions.includes(operationPermission)) {
-        return true; // User can perform the operation
-    }
-    return false; // Operation not allowed
+    // const userRole = await getUserRole(userId); // Implement this to get the user's role based on userId
+    // const rolePermissions = await getRolePermissions(userRole); // Implement this to retrieve permissions for the role from IDB
+
+    // if (isValidPermission(operationPermission) && rolePermissions.includes(operationPermission)) {
+    //     return true; // User can perform the operation
+    // }
+    // return false; // Operation not allowed
 }
 
 // Roles
@@ -1289,6 +1291,18 @@ async function deleteRole(id) {
     });
 }
 
+function setCurrentUser(userId) {
+    localStorage.setItem('currentUser', userId);
+}
+
+function getCurrentUser() {
+    return localStorage.getItem('currentUser');
+}
+
+function clearCurrentUser() {
+    localStorage.removeItem('currentUser');
+}
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1310,6 +1324,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	let currentEditable = null;
 	let currentObserver = null;
+
+	setCurrentUser('1710950508258');
+
+	const currentUserObj = await readUser(getCurrentUser());
+
+	canUserPerformOperation(currentUserObj);
+
+
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
