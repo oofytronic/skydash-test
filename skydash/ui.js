@@ -1223,17 +1223,23 @@ function isValidPermission(permission) {
     return permissionsList.includes(permission);
 }
 
-async function canUserPerformOperation(userId, operationPermission) {
-    console.log(userId)
+async function canUserPerformOperation(userObj, operationPermission) {
+    const userRoles = userObj.roles;
 
-    // const userRole = await getUserRole(userId); // Implement this to get the user's role based on userId
-    // const rolePermissions = await getRolePermissions(userRole); // Implement this to retrieve permissions for the role from IDB
+    // Retrieve the permissions for each role
+    const permissions = await Promise.all(userRoles.map(async roleName => {
+        // Assume you have a function readRoleByName that retrieves a role by its name
+        const roleObj = await readRoleByName(roleName);
+        return roleObj.permissions; // Assuming each role object has a 'permissions' array
+    }));
 
-    // if (isValidPermission(operationPermission) && rolePermissions.includes(operationPermission)) {
-    //     return true; // User can perform the operation
-    // }
-    // return false; // Operation not allowed
+    // Flatten the array of permissions arrays and remove duplicates
+    const uniquePermissions = [...new Set(permissions.flat())];
+
+    // Check if any of the user's roles grant the required permission
+    return uniquePermissions.includes(operationPermission);
 }
+
 
 // Roles
 async function createRole(roleData) {
@@ -1267,6 +1273,18 @@ async function readRole(id) {
         request.onsuccess = () => resolve(request.result);
         request.onerror = (event) => reject(event.target.error);
     });
+}
+
+async function readRoleByName(roleName) {
+    const db = await openDB(); // Your function to open IndexedDB
+    const tx = db.transaction("roles", "readonly");
+    const store = tx.objectStore("roles");
+    
+    const allRoles = await store.getAll();
+    const roleObj = allRoles.find(role => role.name === roleName);
+    
+    db.close();
+    return roleObj;
 }
 
 async function updateRole(id, updates) {
@@ -1325,12 +1343,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let currentEditable = null;
 	let currentObserver = null;
 
-	setCurrentUser('1710950508258');
+	setCurrentUser('1710968566123');
 
 	const currentUserObj = await readUser(getCurrentUser());
 
-	canUserPerformOperation(currentUserObj);
-
+	console.log(await canUserPerformOperation(currentUserObj, "EDIT_CONTENT"));
 
 
 	// EVENTS (CLICK)
