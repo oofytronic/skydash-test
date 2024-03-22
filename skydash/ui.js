@@ -1240,7 +1240,6 @@ async function canUserPerformOperation(userObj, operationPermission) {
     return uniquePermissions.includes(operationPermission);
 }
 
-
 // Roles
 async function createRole(roleData) {
   const db = await openDB();
@@ -1280,11 +1279,23 @@ async function readRoleByName(roleName) {
     const tx = db.transaction("roles", "readonly");
     const store = tx.objectStore("roles");
     
-    const allRoles = await store.getAll();
-    const roleObj = allRoles.find(role => role.name === roleName);
-    
-    db.close();
-    return roleObj;
+    // Use a promise to properly wait for getAll to complete
+    const allRoles = await new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+
+    // Ensure allRoles is an array before using .find
+    if (Array.isArray(allRoles)) {
+        const roleObj = allRoles.find(role => role.name === roleName);
+        db.close();
+        return roleObj;
+    } else {
+        console.error("Expected an array of roles, received:", allRoles);
+        db.close();
+        return undefined; // or handle this case as you see fit
+    }
 }
 
 async function updateRole(id, updates) {
@@ -1321,6 +1332,49 @@ function clearCurrentUser() {
     localStorage.removeItem('currentUser');
 }
 
+//Keygen
+async function generateKeyPair() {
+  try {
+    const keyPair = await window.crypto.subtle.generateKey(
+      {
+        name: "ECDSA",
+        namedCurve: "P-256" // Can use "P-384" or "P-521" for different curve parameters
+      },
+      true, // Whether the key is extractable (i.e., can be used in exportKey)
+      ["sign", "verify"] // Can use the key for these operations
+    );
+
+    return keyPair;
+  } catch (error) {
+    console.error("Error generating key pair:", error);
+  }
+}
+
+// Mock function for base58 encoding (for demonstration purposes)
+function base58Encode(arrayBuffer) {
+  // In a real scenario, replace this with actual base58 encoding logic or use a library like `bs58`
+  return "MockBase58" + btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)));
+}
+
+async function exportAndEncodePublicKey(keyPair) {
+  try {
+    const exportedKey = await window.crypto.subtle.exportKey(
+      "raw", // Export in raw format
+      keyPair.publicKey // Public key from the key pair
+    );
+
+    // Encode the exported public key using base58 (or a similar encoding method)
+    const encodedKey = base58Encode(exportedKey);
+    return encodedKey;
+  } catch (error) {
+    console.error("Error exporting or encoding public key:", error);
+  }
+}
+
+function formDidKey(encodedPublicKey) {
+  return `did:key:${encodedPublicKey}`;
+}
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1343,12 +1397,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let currentEditable = null;
 	let currentObserver = null;
 
-	setCurrentUser('1710968566123');
+	setCurrentUser('1710950508258')
+	// setCurrentUser('1710968566123');
 
 	const currentUserObj = await readUser(getCurrentUser());
 
-	console.log(await canUserPerformOperation(currentUserObj, "EDIT_CONTENT"));
+	const userCaptain = await canUserPerformOperation(currentUserObj, "EDIT_CONTENT");
 
+	if (userCaptain) {
+		console.log('Hello Captain! Welcome Back!')
+	} else {
+		console.log('Hello Crewmember! Welcome Back!')
+	}
+
+	// Example continuation from the above
+	generateKeyPair().then(async (keyPair) => {
+	  const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
+	  const didKey = formDidKey(encodedPublicKey);
+	  console.log("DID:", didKey);
+	  // The `didKey` variable now holds the complete DID that can be used for identification and verification.
+	});
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
@@ -1522,7 +1590,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    	const data = {
 	    		newId: newId,
 	    		name: 'captain',
-	    		permissions: []
+	    		permissions: [
+	    			'EDIT_CONTENT',
+	    			'DELETE_USER'
+	    		]
 	    	};
 	    	const roleObj = genNewRoleObject(data);
 			await createRole(roleObj);
