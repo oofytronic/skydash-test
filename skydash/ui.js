@@ -1375,6 +1375,23 @@ function formDidKey(encodedPublicKey) {
   return `did:key:${encodedPublicKey}`;
 }
 
+async function registerUser() {
+  // Generate the key pair
+  const keyPair = await generateKeyPair();
+  const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
+  const didKey = formDidKey(encodedPublicKey);
+  const newId = Date.now().toString();
+  const data = {newId: newId};
+  const userObj = genNewUserObject(data);
+
+  // Store the DID and possibly the private key securely
+  // Save the user's DID and other registration details to IndexedDB or another storage
+  createUser({ did: didKey, /* other user details */ });
+
+  console.log("New user DID:", didKey);
+}
+
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1397,6 +1414,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let currentEditable = null;
 	let currentObserver = null;
 
+	if (!getCurrentUser()) {
+		await registerUser();
+		setCurrentUser();
+	}
+
 	setCurrentUser('1710950508258')
 	// setCurrentUser('1710968566123');
 
@@ -1410,13 +1432,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 		console.log('Hello Crewmember! Welcome Back!')
 	}
 
-	// Example continuation from the above
-	generateKeyPair().then(async (keyPair) => {
-	  const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
-	  const didKey = formDidKey(encodedPublicKey);
-	  console.log("DID:", didKey);
-	  // The `didKey` variable now holds the complete DID that can be used for identification and verification.
-	});
+	// // Example continuation from the above
+	// generateKeyPair().then(async (keyPair) => {
+	//   const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
+	//   const didKey = formDidKey(encodedPublicKey);
+	//   console.log("DID:", didKey);
+	//   // The `didKey` variable now holds the complete DID that can be used for identification and verification.
+	// });
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
