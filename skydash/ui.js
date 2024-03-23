@@ -4,10 +4,13 @@ import {capitalize, truncateString, applyMarkdown, fileToDataUrl} from './utilit
 function createSkyDashUI() {
 	const skyHTML = `
 	<div class="skydash-menu">
-		<button data-sky-open="dashboard">Dashboard</button>
-		<button data-sky-open="collections">Collections</button>
-		<button data-sky-open="media">Media Library</button>
-		<div style="width: 30px; height: 30px; border-radius: 50%; background: gray;"></div>
+		<button data-sky-open="collections">C</button>
+		<button data-sky-open="media">M</button>
+		<button
+			data-sky-open="dashboard"
+		  	style="border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+		  <img src="assets/headshot.jpg" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
+		</button>
 	</div>
 
 	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
@@ -383,29 +386,6 @@ function renderDashboardDialog(collections) {
 		    </div>
 		</div>
 		<div>
-			<div style="display: flex; justify-content: space-between; gap: 2rem;">
-				<div class="sky-badge"
-					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
-    border-radius: 10px;
-    margin: 0.5rem 0;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
-                0 6px 20px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
-				>
-					<h2>SkyBadge</h2>
-					<p>Kelly Sattaur</p>
-					<p>Captain</p>
-				</div>
-
-				<div class="sky-account"
-					style="background: gray; width: 50%; height: fit-content; color: white; padding: 0.5rem;
-    border-radius: 10px;
-    margin: 0.5rem 0;"
-				>
-					<h2>Account Overview</h2>
-					<p>Network: IPFS</p>
-				</div>
-			</div>
 			<div>
 				<h2>Users</h2>
 				<button class="create-user-button">Create User</button>
@@ -1490,16 +1470,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    	const userObj = genNewUserObject(data);
 	    	await createUser(userObj);
 
-	    	const body = renderDashboardDialog();
-			dashboardDialog.innerHTML = body;
-
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
-				return `<div style="background: gray; color: white; width: 10%;
-					    padding: 0.5rem;
-					    border-radius: 10px;
-					    margin: 0.5rem 0;">
-						<p>${user.name}</p>
+				return `
+				<div class="sky-badge"
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;
+				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+				                0 6px 20px rgba(0, 0, 0, 0.1);
+				    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
+				>
+					<h2>SkyBadge</h2>
+					<p>${user.name}</p>
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
@@ -1553,11 +1536,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
-				return `<div style="background: gray; color: white; width: 10%;
-					    padding: 0.5rem;
-					    border-radius: 10px;
-					    margin: 0.5rem 0;">
-						<p>${user.name}</p>
+				return `<div class="sky-badge"
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;
+				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+				                0 6px 20px rgba(0, 0, 0, 0.1);
+				    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
+				>
+					<h2>SkyBadge</h2>
+					<p>${user.name}</p>
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
@@ -1705,11 +1693,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
-				return `<div style="background: gray; color: white; width: 10%;
-					    padding: 0.5rem;
-					    border-radius: 10px;
-					    margin: 0.5rem 0;">
-						<p>${user.name}</p>
+				return `<div class="sky-badge"
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+				    border-radius: 10px;
+				    margin: 0.5rem 0;
+				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+				                0 6px 20px rgba(0, 0, 0, 0.1);
+				    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
+				>
+					<h2>SkyBadge</h2>
+					<p>${user.name}</p>
 					<div>
 						${user.roles.map(role => `<p>${role}</p>`).join('')}
 					</div>
