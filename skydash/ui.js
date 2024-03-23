@@ -1203,17 +1203,13 @@ function isValidPermission(permission) {
 async function canUserPerformOperation(userObj, operationPermission) {
     const userRoles = userObj.roles;
 
-    // Retrieve the permissions for each role
     const permissions = await Promise.all(userRoles.map(async roleName => {
-        // Assume you have a function readRoleByName that retrieves a role by its name
         const roleObj = await readRoleByName(roleName);
-        return roleObj.permissions; // Assuming each role object has a 'permissions' array
+        return roleObj.permissions;
     }));
 
-    // Flatten the array of permissions arrays and remove duplicates
     const uniquePermissions = [...new Set(permissions.flat())];
 
-    // Check if any of the user's roles grant the required permission
     return uniquePermissions.includes(operationPermission);
 }
 
@@ -1393,14 +1389,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let currentEditable = null;
 	let currentObserver = null;
 
-	if (!getCurrentUser()) {
-		const newId = Date.now().toString();
-		await registerUser(newId);
-		setCurrentUser(newId);
+	// AUTO CAPTAIN
+	const roles = await readRoles();
+	const rolesStatus = roles.length;
+	
+	if (rolesStatus === 0) {
+		const data =
+		{
+			id: crypto.randomUUID(),
+		    name: 'captain',
+		  	permissions: ['EDIT_CONTENT']
+	    }
+
+	    await createRole(data);
 	}
 
-	// setCurrentUser('1710950508258')
-	// setCurrentUser('1710968566123');
+	if (!getCurrentUser()) {
+		await registerUser();
+	}
 
 	const currentUserObj = await readUser(getCurrentUser());
 
@@ -1411,14 +1417,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	} else {
 		console.log('Hello Crewmember! Welcome Back!')
 	}
-
-	// // Example continuation from the above
-	// generateKeyPair().then(async (keyPair) => {
-	//   const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
-	//   const didKey = formDidKey(encodedPublicKey);
-	//   console.log("DID:", didKey);
-	//   // The `didKey` variable now holds the complete DID that can be used for identification and verification.
-	// });
 
 	// EVENTS (CLICK)
 	document.body.addEventListener('click', async (event) => {
