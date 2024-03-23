@@ -701,36 +701,13 @@ function genNewInstanceObject(data) {
 
 function genNewUserObject(data) {
 	return {
-    id: data.newId,
-    name: "Kelly Sattaur",
-    roles: ["captain"],
-    favicon: "",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-	didDocument: {
-	    did: "did:example:123456789abcdefghi",
-	    publicKey: "03daed4f7cbb2848b3c1fecb3f9f6588bcdeeb8a",
-	    authentication: [
-	      {
-	        id: "did:example:123456789abcdefghi#keys-1",
-	        type: "Ed25519VerificationKey2018",
-	        controller: "did:example:123456789abcdefghi",
-	        publicKeyHex: "03daed4f7cbb2848b3c1fecb3f9f6588bcdeeb8a"
-	      }
-	    ],
-	    service: [
-	      {
-	        id: "did:example:123456789abcdefghi#vcs",
-	        type: "VerifiableCredentialService",
-	        serviceEndpoint: "https://example.com/vc/"
-	      },
-	      {
-	        id: "did:example:123456789abcdefghi#messages",
-	        type: "MessagingService",
-	        serviceEndpoint: "https://example.com/messages/"
-	      }
-	    ]
-	  }
+	    id: data.id,
+	    did: data.did,
+	    name: "Kelly Sattaur",
+	    roles: ["captain"],
+	    favicon: "",
+	    createdAt: new Date().toISOString(),
+	    updatedAt: new Date().toISOString(),
 	}
 }
 
@@ -1376,21 +1353,23 @@ function formDidKey(encodedPublicKey) {
 }
 
 async function registerUser() {
-  // Generate the key pair
+  // Generate the key pair for DID
   const keyPair = await generateKeyPair();
   const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
   const didKey = formDidKey(encodedPublicKey);
-  const newId = Date.now().toString();
-  const data = {newId: newId};
+  const userToken = crypto.randomUUID();
+
+  const data = {
+    id: userToken,
+    did: didKey
+  };
+
+  setCurrentUser(userToken);
+
   const userObj = genNewUserObject(data);
 
-  // Store the DID and possibly the private key securely
-  // Save the user's DID and other registration details to IndexedDB or another storage
-  createUser({ did: didKey, /* other user details */ });
-
-  console.log("New user DID:", didKey);
+  await createUser(userObj);
 }
-
 
 
 // EVENT LISTENERS
@@ -1415,11 +1394,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 	let currentObserver = null;
 
 	if (!getCurrentUser()) {
-		await registerUser();
-		setCurrentUser();
+		const newId = Date.now().toString();
+		await registerUser(newId);
+		setCurrentUser(newId);
 	}
 
-	setCurrentUser('1710950508258')
+	// setCurrentUser('1710950508258')
 	// setCurrentUser('1710968566123');
 
 	const currentUserObj = await readUser(getCurrentUser());
