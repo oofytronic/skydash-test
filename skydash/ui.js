@@ -387,13 +387,17 @@ function renderDashboardDialog(collections) {
 		</div>
 		<div>
 			<div>
-				<h2>Users</h2>
-				<button class="create-user-button">Create User</button>
+				<div style="display: flex; gap: 1rem; justify-content: start; align-items: center;">
+					<h2>Users</h2>
+					<button class="create-user-button">Create User</button>
+				</div>
 				<div class="sky-users-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
 			<div>
-				<h2>Roles</h2>
-				<button class="create-role-button">Create Role</button>
+				<div style="display: flex; gap: 1rem; justify-content: start; align-items: center;">
+					<h2>Roles</h2>
+					<button class="create-role-button">Create Role</button>
+				</div>
 				<div class="sky-roles-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
 			<div>
