@@ -1,4 +1,20 @@
 import {capitalize, truncateString, applyMarkdown, fileToDataUrl} from './utilities.js';
+import { createHelia } from 'helia'
+
+// create a Helia node
+const helia = await createHelia();
+
+async function publishToIPFS(jsonData) {
+  // Add JSON data to IPFS
+  const { cid } = await ipfs.add(JSON.stringify(jsonData));
+
+  // Update IPNS key with new CID
+  const ipnsKey = 'k51qzi5uqu5dh4bzmotfzj2qezrs1hbrkogs3zb7olevc6z51kccnrtdcoy55l';
+  const { name } = await ipfs.name.publish(cid.toString(), { key: ipnsKey });
+
+  return name;
+}
+
 
 // MAIN
 function createSkyDashUI() {
@@ -9,7 +25,7 @@ function createSkyDashUI() {
 		<button
 			data-sky-open="dashboard"
 		  	style="border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-		  <img src="assets/headshot.jpg" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
+		  <img src="/assets/headshot.jpg" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
 		</button>
 	</div>
 
@@ -80,6 +96,7 @@ function injectSkyDashStyles() {
             bottom: 1rem;
             right: 1rem;
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 1rem;
             border: 2px solid #ccc;
@@ -389,7 +406,7 @@ function renderDashboardDialog(collections) {
 			<div>
 				<div style="display: flex; gap: 1rem; justify-content: start; align-items: center;">
 					<h2>Users</h2>
-					<button class="create-user-button">Create User</button>
+					<!-- <button class="create-user-button">Create User</button> -->
 				</div>
 				<div class="sky-users-preview" style="display: flex; gap: 1rem;"></div>
 			</div>
@@ -1351,6 +1368,35 @@ async function registerUser() {
   await createUser(userObj);
 }
 
+// IPFS
+async function gatherDataFromIDB() {
+  let data = {
+    collections: [],
+    editables: [],
+    mediaLibrary: [],
+    users: [],
+    rbac: []
+  };
+
+  // Open a connection to your IDB database
+  const db = await openDB("YourDatabaseName", 1);
+
+  // Gather data from each store and add to the data object
+  // This is a simplified version; you may need to adjust based on your actual data structure and async handling
+  data.collections = await db.getAllFromStore("collections");
+  data.editables = await db.getAllFromStore("editables");
+  data.mediaLibrary = await db.getAllFromStore("mediaLibrary");
+  data.users = await db.getAllFromStore("users");
+  data.rbac = await db.getAllFromStore("rbac");
+
+  // Close the database connection if needed
+  db.close();
+
+  return data;
+}
+
+
+
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1469,10 +1515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    }
 
 	    if (event.target.matches('.create-user-button')) {
-	    	const newId = Date.now().toString();
-	    	const data = {newId: newId};
-	    	const userObj = genNewUserObject(data);
-	    	await createUser(userObj);
+	    	await registerUser();
 
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
@@ -1535,9 +1578,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 	    	const id = event.target.dataset.skyId;
 	    	await deleteUser(id);
 
-	    	const body = renderDashboardDialog();
-			dashboardDialog.innerHTML = body;
-
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
 				return `<div class="sky-badge"
@@ -1560,44 +1600,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 			const userPane = document.querySelector('.sky-users-preview');
 			userPane.innerHTML = userDash;
-
-			const collectionData = await readCollections();
-			const collectionsDash = collectionData.map(collection => {
-				return `<div style="background: gray; color: white; width: 10%;
-				    padding: 0.5rem;
-				    border-radius: 10px;
-				    margin: 0.5rem 0;">
-					<p>${collection.displayName}</p>
-					<p>${collection.instances.length}</p>
-				</div>`
-			}).join('');
-
-			const collectionPane = document.querySelector('.sky-collections-preview');
-			collectionPane.innerHTML = collectionsDash;
 	    }
 
 	    // WWWORKING
 	    if (event.target.matches('.create-role-button')) {
-	    	const newId = Date.now().toString();
-	    	const data = {
-	    		newId: newId,
-	    		name: 'captain',
-	    		permissions: [
-	    			'EDIT_CONTENT',
-	    			'DELETE_USER'
-	    		]
-	    	};
-	    	const roleObj = genNewRoleObject(data);
-			await createRole(roleObj);
-			const roleData = await readRole(newId);
-			const roleDash = `<div style="background: gray; color: white; width: 10%;
+	    	const data =
+			{
+				id: crypto.randomUUID(),
+			    name: 'editor',
+			  	permissions: ['EDIT_CONTENT']
+		    }
+
+		    await createRole(data);
+
+			const roleData = await readRoles();
+			const roleDash = roleData.map(role => {
+				return `<div style="background: gray; color: white; width: 10%;
 					    padding: 0.5rem;
 					    border-radius: 10px;
 					    margin: 0.5rem 0;">
-						<p>${roleData.name}</p>
-					<button class="edit-role-button" data-sky-id="${roleData.id}">Edit Role</button>
-					<button class="delete-role-button" data-sky-id="${roleData.id}">Delete Role</button>
+						<p>${role.name}</p>
+					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
+					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
 				</div>`;
+			}).join('');
+
+			const rolePane = document.querySelector('.sky-roles-preview');
+			rolePane.innerHTML = roleDash;
+	    }
+
+	    if (event.target.matches('.delete-role-button')) {
+	    	const id = event.target.dataset.skyId;
+	    	await deleteRole(id);
+
+	    	const roleData = await readRoles();
+			const roleDash = roleData.map(role => {
+				return `<div style="background: gray; color: white; width: 10%;
+					    padding: 0.5rem;
+					    border-radius: 10px;
+					    margin: 0.5rem 0;">
+						<p>${role.name}</p>
+					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
+					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
+				</div>`;
+			}).join('');
 
 			const rolePane = document.querySelector('.sky-roles-preview');
 			rolePane.innerHTML = roleDash;
