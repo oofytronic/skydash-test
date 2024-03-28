@@ -1353,7 +1353,7 @@ async function registerUser() {
   await createUser(userObj);
 }
 
-// IPFS
+// IPFS Related
 async function gatherDataFromIDB() {
   let data = {
     collections: [],
@@ -1381,8 +1381,6 @@ async function gatherDataFromIDB() {
 }
 
 
-
-
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', async () => {
 	createSkyDashUI();
@@ -1396,10 +1394,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const skyKey = document.body.getAttribute('data-sky-key');
 	const editableElements = document.querySelectorAll('[data-sky-element]');
 	const editableFields = document.querySelectorAll('[data-sky-field]');
+	const editableComponents = document.querySelectorAll('[data-sky-component');
 
     await initializeEditables();
 
     await initializeEditableFields();
+
+
+    // WWWORKING
+    editableComponents.forEach(comp => console.log(comp.dataset.skyComponent))
 
 	let currentEditable = null;
 	let currentObserver = null;
@@ -1553,8 +1556,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 			    </div>
 			</div>
 			<div>
-				<form>
+				<form id="edit-user-form" data-sky-id="${userData.id}">
+					<input type="text" name="name" value="${userData.name}">
 					<input type="text" name="role" value="${userData.roles}">
+					<button type="submit">Submit</button>
 				</form>
 			</div>`;
 	    }
@@ -1587,7 +1592,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			userPane.innerHTML = userDash;
 	    }
 
-	    // WWWORKING
 	    if (event.target.matches('.create-role-button')) {
 	    	const data =
 			{
@@ -2055,6 +2059,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 		        console.error("Error updating editable:", error);
 		        // Optionally, handle the error, e.g., show an error message to the user
 		    }
+		}
+
+		// EDIT USER
+		if (event.target.matches('#edit-user-form')) {
+			event.preventDefault();
+
+			const formData = new FormData(event.target);
+			let tempData = {};
+			// tempData.newId = Date.now().toString();
+
+			for (let [key, value] of formData.entries()) {
+			    tempData[key] = value;
+			}
+
+			const userId = event.target.dataset.skyId;
+
+			const oldData = await readUser(userId);
+			const newData = {...oldData, ...tempData};
+
+			await updateUser(newData);
 		}
 	});
 
