@@ -4,18 +4,15 @@ import {capitalize, truncateString, applyMarkdown, fileToDataUrl} from './utilit
 // MAIN
 function createSkyDashUI() {
 	const skyHTML = `
-	<div class="skydash-menu">
-		<button data-sky-open="collections">C</button>
-		<button data-sky-open="media">M</button>
+	<div class="skydash-user">
 		<button
 			data-sky-open="dashboard"
-		  	style="border-radius: 50%; width: 30px; height: 30px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+		  	style="border-radius: 50%; width: 50px; height: 50px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
 		  <img src="/assets/headshot.jpg" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
 		</button>
 	</div>
 
 	<dialog data-sky-dialog="dashboard" id="dashboardDialog" class="dashboard-dialog"></dialog>
-	<dialog data-sky-dialog="collections" id="collectionsDialog" class="collections-dialog"></dialog>
 	<dialog data-sky-dialog="media" id="mediaDialog" class="media-dialog"></dialog>
 	<dialog data-sky-dialog="edit" id="editDialog" class="edit-dialog"></dialog>
 	<dialog data-sky-dialog="components" id="componentsDialog" class="components-dialog"></dialog>
@@ -50,7 +47,7 @@ function injectSkyDashStyles() {
           background-color: rgb(0 0 0 / 0%);
         }
 
-        #collectionsDialog, #componentsDialog, #editDialog {
+        #componentsDialog, #editDialog {
             position: fixed;
             bottom: 6rem;
             right: 1rem;
@@ -76,7 +73,7 @@ function injectSkyDashStyles() {
 		}
 
         /* SkyDash Menu */
-        .skydash-menu {
+        .skydash-user {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
@@ -86,7 +83,7 @@ function injectSkyDashStyles() {
             gap: 1rem;
             border: 2px solid #ccc;
 			border-radius: 10px;
-			padding: 20px;
+			padding: 5px;
 			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             background-color: #F6F6F6;
         }
@@ -208,10 +205,10 @@ async function openFieldEditor(field) {
             return;
         }
 
-        const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
+        const editorDialog = document.querySelector('[data-sky-dialog="edit"]');
         const body = renderInstanceEditForm(collection, instance);
-        collectionsDialog.innerHTML = body;
-        collectionsDialog.show();
+        editorDialog.innerHTML = body;
+        editorDialog.show();
 
         activateFieldInDialog(fieldName);
     } catch (error) {
@@ -298,6 +295,16 @@ function inferEditableType(tagName) {
 }
 
 // TEMPLATES (HTML)
+function renderUserIsland(user) {
+	return `
+		<button
+			data-sky-open="dashboard"
+		  	style="border-radius: 50%; width: 50px; height: 50px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
+		  <img src="${user.favicon}" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
+		</button>
+	`;
+}
+
 function wrapEditableElement(element, id) {
     const wrapper = document.createElement('div');
 
@@ -379,11 +386,53 @@ function renderEditableEditForm() {
 		</form>`;
 }
 
-function renderDashboardDialog(collections) {
+async function renderDashboardDialog(collections) {
+	const userData = await readUsers();
+	const userDash = userData.map(user => {
+		return `<div class="sky-badge"
+			style="background: linear-gradient(45deg, darkblue, blue, lightblue); width: 40%; height: 225px; color: white; padding: 0.5rem;
+		    border-radius: 10px;
+		    margin: 0.5rem 0;
+		    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2),
+		                0 6px 20px rgba(0, 0, 0, 0.2);
+		    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
+		>
+			<div style="position: relative; display: flex; justify-content: space-between; height: 100%">
+				<div>
+					<h2>SkyBadge</h2>
+					<p>${user.name}</p>
+					<div>
+						${user.roles.map(role => `<p>${role}</p>`).join('')}
+					</div>
+					<button class="edit-user-button" data-sky-id="${user.id}">Edit User</button>
+					<!-- <button class="delete-user-button" data-sky-id="${user.id}">Delete User</button> -->
+				</div>
+				<div>
+					<img src="${user.favicon}" alt="headshot" style="height: 100%; border-radius: 10px;">
+				</div>
+			</div>
+		</div>`;
+	}).join('');
+
+	const collectionData = await readCollections();
+	const collectionsDash = collectionData.map(collection => {
+		return `<div style="background: gray; color: white; width: 10%;
+		    padding: 0.5rem;
+		    border-radius: 10px;
+		    margin: 0.5rem 0;">
+			<p>${collection.displayName}</p>
+			<p>${collection.instances.length}</p>
+			<button class="instance-view-button" data-collection-id="${collection.id}">View</button>
+			<button data-collection-id="${collection.id}" class="delete-collection-button">Delete</button>
+		</div>`
+	}).join('');
+
+
 	return `
 		<div style="display: flex; justify-content: space-between; width: 100%;">
 	    	<h1>Dashboard</h1>
 	    	<div style="display: flex; gap: 1rem;">
+	    		<button data-sky-open="media">Media</button>
 			    <button data-sky-close="dashboard">Close</button>
 		    </div>
 		</div>
@@ -393,18 +442,37 @@ function renderDashboardDialog(collections) {
 					<h2>Users</h2>
 					<!-- <button class="create-user-button">Create User</button> -->
 				</div>
-				<div class="sky-users-preview" style="display: flex; gap: 1rem;"></div>
+				<div class="sky-users-preview" style="display: flex; gap: 1rem;">${userDash}</div>
 			</div>
 			<div>
 				<div style="display: flex; gap: 1rem; justify-content: start; align-items: center;">
-					<h2>Roles</h2>
-					<button class="create-role-button">Create Role</button>
+					<h2>Collections</h2>
+					<button onclick="document.querySelector('#form-container').style.display = 'block';">Create Collection</button>
 				</div>
-				<div class="sky-roles-preview" style="display: flex; gap: 1rem;"></div>
-			</div>
-			<div>
-				<h2>Collections</h2>
-				<div class="sky-collections-preview" style="display: flex; gap: 1rem;"></div>
+				<div id="form-container" style="display:none;">
+					<form
+						id="new-collection-form"
+						style="display: flex; flex-direction: column; gap: 1rem;">
+						<label>
+							Plural Name
+							<input type="text" name="collectionPlural" placeholder="Plural Name" required>
+						</label>
+						<label>
+							Singular Name
+							<input type="text" name="collectionSingular" placeholder="Singular Name" required>
+						</label>
+						<label>
+							Display Name
+							<input type="text" name="collectionDisplay" placeholder="Display Name" required>
+						</label>
+						<div>
+							<p>Collection Template</p>
+							<button id="addFieldButton">+ Field</button>
+						</div>
+						<button type="submit">Create Collection</button>
+					</form>
+				</div>
+				<div class="sky-collections-preview" style="display: flex; gap: 1rem;">${collectionsDash}</div>
 			</div>
 		</div>
 	`;
@@ -691,7 +759,7 @@ function genNewUserObject(data) {
 	    did: data.did,
 	    name: "Kelly Sattaur",
 	    roles: ["captain"],
-	    favicon: "",
+	    favicon: "/assets/headshot.jpg",
 	    createdAt: new Date().toISOString(),
 	    updatedAt: new Date().toISOString(),
 	}
@@ -1386,8 +1454,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	createSkyDashUI();
 	injectSkyDashStyles();
 	
+	const skyUserIsland = document.querySelector('.skydash-user');
 	const dashboardDialog = document.querySelector('[data-sky-dialog="dashboard"]');
-	const collectionsDialog = document.querySelector('[data-sky-dialog="collections"]');
 	const componentsDialog = document.querySelector('[data-sky-dialog="components"]');
 	const mediaDialog = document.querySelector('[data-sky-dialog="media"]');
 	const editDialog = document.querySelector('[data-sky-dialog="edit"');
@@ -1427,6 +1495,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	const currentUserObj = await readUser(getCurrentUser());
+
+	skyUserIsland.innerHTML = renderUserIsland(currentUserObj);
 
 	const userCaptain = await canUserPerformOperation(currentUserObj, "EDIT_CONTENT");
 
@@ -1509,7 +1579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const userDash = userData.map(user => {
 				return `
 				<div class="sky-badge"
-					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 225px; color: white; padding: 0.5rem;
 				    border-radius: 10px;
 				    margin: 0.5rem 0;
 				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
@@ -1571,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const userData = await readUsers();
 			const userDash = userData.map(user => {
 				return `<div class="sky-badge"
-					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
+					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 225px; color: white; padding: 0.5rem;
 				    border-radius: 10px;
 				    margin: 0.5rem 0;
 				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
@@ -1727,75 +1797,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 			});
 
         	dashboardDialog.show();
-        	const body = renderDashboardDialog();
+        	const body = await renderDashboardDialog();
 			dashboardDialog.innerHTML = body;
-
-			const userData = await readUsers();
-			const userDash = userData.map(user => {
-				return `<div class="sky-badge"
-					style="background: linear-gradient(45deg, red, blue); width: 50%; height: 250px; color: white; padding: 0.5rem;
-				    border-radius: 10px;
-				    margin: 0.5rem 0;
-				    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
-				                0 6px 20px rgba(0, 0, 0, 0.1);
-				    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;"
-				>
-					<h2>SkyBadge</h2>
-					<p>${user.name}</p>
-					<div>
-						${user.roles.map(role => `<p>${role}</p>`).join('')}
-					</div>
-					<button class="edit-user-button" data-sky-id="${user.id}">Edit User</button>
-					<button class="delete-user-button" data-sky-id="${user.id}">Delete User</button>
-				</div>`;
-			}).join('');
-
-			const userPane = document.querySelector('.sky-users-preview');
-			userPane.innerHTML = userDash;
-
-			const collectionData = await readCollections();
-			const collectionsDash = collectionData.map(collection => {
-				return `<div style="background: gray; color: white; width: 10%;
-				    padding: 0.5rem;
-				    border-radius: 10px;
-				    margin: 0.5rem 0;">
-					<p>${collection.displayName}</p>
-					<p>${collection.instances.length}</p>
-				</div>`
-			}).join('');
-
-			const collectionPane = document.querySelector('.sky-collections-preview');
-			collectionPane.innerHTML = collectionsDash;
-
-			const roleData = await readRoles();
-			const roleDash = roleData.map(role => {
-				return `<div style="background: gray; color: white; width: 10%;
-					    padding: 0.5rem;
-					    border-radius: 10px;
-					    margin: 0.5rem 0;">
-						<p>${role.name}</p>
-					<button class="edit-role-button" data-sky-id="${role.id}">Edit Role</button>
-					<button class="delete-role-button" data-sky-id="${role.id}">Delete Role</button>
-				</div>`;
-			}).join('');
-
-			const rolePane = document.querySelector('.sky-roles-preview');
-			rolePane.innerHTML = roleDash;
         }
-
-		if (event.target.matches('[data-sky-open="collections"]')) {
-			document.querySelectorAll('[data-sky-dialog]').forEach(dialog => {
-			    if (dialog.dataset.skyDialog !== event.target.dataset.skyOpen) {
-			      dialog.close();
-			    }
-			});
-
-			const collections = await readCollections();
-
-			collectionsDialog.show();
-			const body = renderCollectionsDialog(collections);
-			collectionsDialog.innerHTML = body;
-		}
 
 		if (event.target.matches('[data-sky-open="media"]')) {
 			document.querySelectorAll('[data-sky-dialog]').forEach(dialog => {
@@ -1816,10 +1820,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			dashboardDialog.close();
 		}
 
-		if (event.target.matches('[data-sky-close="collections"]')) {
-			collectionsDialog.close();
-		}
-
 		if (event.target.matches('[data-sky-close="media"]')) {
 			mediaDialog.close();
 		}
@@ -1838,8 +1838,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			await deleteCollection(collectionId);
 			const collections = await readCollections();
 
-			const body = renderCollectionsDialog(collections);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = await renderDashboardDialog();
 		}
 
 		if (event.target.matches('#addFieldButton')) {
@@ -1878,7 +1877,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const collection = await readCollection(collectionId);
 
 			const body = renderNewInstanceForm(collection);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		if (event.target.matches('.instance-view-button')) {
@@ -1887,7 +1886,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const instances = await readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		if (event.target.matches('.edit-instance-button')) {
@@ -1897,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const instance = await readInstance(collectionId, instanceId);
 
 			const body = renderInstanceEditForm(collection, instance);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		if (event.target.matches('.delete-instance-button')) {
@@ -1908,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const instances = await readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		if (event.target.matches("#openFileUpload")) {
@@ -1967,8 +1966,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 			await createCollection(collection);
 			const collections = await readCollections();
 
-			const body = renderCollectionsDialog(collections);
-			collectionsDialog.innerHTML = body;
+			// const body = renderCollectionsDialog(collections);
+			dashboardDialog.innerHTML = await renderDashboardDialog();
 		}
 
 		// CREATE INSTANCE
@@ -1992,7 +1991,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const instances = await readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		// UPDATE INSTANCE
@@ -2017,7 +2016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const instances = await readInstances(collectionId);
 
 			const body = renderInstances(collection, instances);
-			collectionsDialog.innerHTML = body;
+			dashboardDialog.innerHTML = body;
 		}
 
 		// EDIT PAGE
@@ -2079,6 +2078,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 			const newData = {...oldData, ...tempData};
 
 			await updateUser(newData);
+
+			dashboardDialog.close();
 		}
 	});
 
