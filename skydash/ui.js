@@ -8,7 +8,6 @@ function createSkyDashUI() {
 		<button
 			data-sky-open="dashboard"
 		  	style="border-radius: 50%; width: 50px; height: 50px; padding: 0; border: 1px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-		  <img src="/assets/headshot.jpg" alt="headshot" style="width: 100%; height: auto; pointer-events: none;">
 		</button>
 	</div>
 
@@ -757,9 +756,9 @@ function genNewUserObject(data) {
 	return {
 	    id: data.id,
 	    did: data.did,
-	    name: "Kelly Sattaur",
-	    roles: ["captain"],
-	    favicon: "/assets/headshot.jpg",
+	    name: data.name,
+	    roles: [data.role],
+	    favicon: data.favicon,
 	    createdAt: new Date().toISOString(),
 	    updatedAt: new Date().toISOString(),
 	}
@@ -1402,21 +1401,23 @@ function formDidKey(encodedPublicKey) {
   return `did:key:${encodedPublicKey}`;
 }
 
-async function registerUser() {
+async function registerUser(userData) {
   // Generate the key pair for DID
   const keyPair = await generateKeyPair();
   const encodedPublicKey = await exportAndEncodePublicKey(keyPair);
   const didKey = formDidKey(encodedPublicKey);
   const userToken = crypto.randomUUID();
 
-  const data = {
+  const initData = {
     id: userToken,
     did: didKey
   };
 
+  const fullData = {...initData, ...userData}
+
   setCurrentUser(userToken);
 
-  const userObj = genNewUserObject(data);
+  const userObj = genNewUserObject(fullData);
 
   await createUser(userObj);
 }
@@ -1491,19 +1492,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 	}
 
 	if (!getCurrentUser()) {
-		await registerUser();
-	}
+		skyUserIsland.innerHTML = `
+			<form id="create-user-form" style="display: flex; flex-direction: column; gap: 1rem;">
+				<p>Setup Your Profile</p>
+				<label>
+					Name
+					<input type="text" name="name">
+				</label>
 
-	const currentUserObj = await readUser(getCurrentUser());
+				<label>
+					Role
+					<select name="role">
+						<option value="captain">Captain</option>
+					</select>
+				</label>
 
-	skyUserIsland.innerHTML = renderUserIsland(currentUserObj);
+				<label>
+					Favicon
+					<input type="file" name="favicon">
+				</label>
 
-	const userCaptain = await canUserPerformOperation(currentUserObj, "EDIT_CONTENT");
-
-	if (userCaptain) {
-		console.log('Hello Captain! Welcome Back!')
+				<button type="submit">Create User</button>
+			</form>
+		`;
 	} else {
-		console.log('Hello Crewmember! Welcome Back!')
+		const currentUserObj = await readUser(getCurrentUser());
+
+		skyUserIsland.innerHTML = renderUserIsland(currentUserObj);
+
+		const userCaptain = await canUserPerformOperation(currentUserObj, "EDIT_CONTENT");
+
+		if (userCaptain) {
+			console.log('Hello Captain! Welcome Back!')
+		} else {
+			console.log('Hello Crewmember! Welcome Back!')
+		}
 	}
 
 	// EVENTS (CLICK)
@@ -1629,6 +1652,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 				<form id="edit-user-form" data-sky-id="${userData.id}">
 					<input type="text" name="name" value="${userData.name}">
 					<input type="text" name="role" value="${userData.roles}">
+					<input type="file" name="favicon">
+					<img src="${userData.favicon}" style="max-height: 200px;">
 					<button type="submit">Submit</button>
 				</form>
 			</div>`;
@@ -1917,6 +1942,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 	// EVENTS (SUBMIT)
 	document.body.addEventListener('submit', async (event) => {
+		// CREATE USER
+		if (event.target.matches('#create-user-form')) {
+			event.preventDefault();
+
+			const formData = new FormData(event.target);
+			const tempData = {};
+
+			for (let [key, value] of formData.entries()) {
+				if (key === 'favicon') {
+					tempData[key] = await fileToDataUrl(value);
+				} else {
+					tempData[key] = value;
+				}
+			}
+
+			await registerUser(tempData);
+
+			const currentUserObj = await readUser(getCurrentUser());
+
+			skyUserIsland.innerHTML = renderUserIsland(currentUserObj);
+		}
+
 		// CREATE COLLECTION
 		if (event.target.matches('#new-collection-form')) {
 			event.preventDefault();
@@ -2069,7 +2116,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 			// tempData.newId = Date.now().toString();
 
 			for (let [key, value] of formData.entries()) {
-			    tempData[key] = value;
+				if (key === 'favicon') {
+					tempData[key] = await fileToDataUrl(value);
+				} else {
+					tempData[key] = value;
+				}
 			}
 
 			const userId = event.target.dataset.skyId;
