@@ -1,8 +1,8 @@
-# SkyDash CMS
+# loSky CMS
 
 **An experimental CMS looking to help users work locally first and manage content effectively. Eventually Decentralized.**
 
-This is a test repository for SkyDash. The `skydash` repository contains all of the SkyDash code. The test site includes the home page and an article page.
+This is a test repository for loSky. The `skydash` repository contains all of the loSky code. The test site includes the home page and an article page.
 
 ## Features
 - Media library
@@ -23,4 +23,4 @@ This is a test repository for SkyDash. The `skydash` repository contains all of 
 7. Any change you make is saved locally.
 
 ## The Future
-SkyDash as it currently stands is just an experiment to see if this type of workflow would be appealing to both developers and users. The future SkyDash would be a script a website owner could add to their custom website. The script would look for data-attributes on elements to display the necessary visual editing interface. SkyDash would come with a full-featured, decentralized user management system and storage system using IndexedDB and IPFS. This would allow website owners to maintain autonomy over their websites and edit their content without the large overhead cloud-based solutions usually come with.
+loSky as it currently stands is just an experiment to see if this type of workflow would be appealing to both developers and users. The future loSky would be a script a website owner could add to their custom website. The script would look for data-attributes on elements to display the necessary visual editing interface. loSky would come with a full-featured, decentralized user management system and storage system using IndexedDB and IPFS. This would allow website owners to maintain autonomy over their websites and edit their content without the large overhead cloud-based solutions usually come with.
